@@ -7,9 +7,9 @@
   --dark: #2D3436;
   --light: #DFE6E9;
   --white: #FFFFFF;
-  --gradient-1: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%);
+  --gradient-1: linear-gradient(135deg, #fff458 0%, #ef9ff7 100%);
   --gradient-2: linear-gradient(135deg, #00CEC9 0%, #81ECEC 100%);
-  --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gradient-bg: linear-gradient(135deg, #fff458 0%, #ef9ff7 100%);
 }
 
 * {
