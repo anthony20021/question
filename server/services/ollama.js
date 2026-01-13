@@ -87,7 +87,7 @@ Exemples: "Quel est ton film préféré ?", "Quelle est ta pizza préférée ?"`
   prompt += `\n\nRéponds uniquement avec un tableau JSON de questions, sans explication.
 Format: ["Question 1 ?", "Question 2 ?", ...]`
 
-  const response = await generateText(prompt, { temperature: 0.8 })
+  const response = await generateText(prompt, { temperature: 0.8, maxTokens: 2048 })
   console.log('🦙 Ollama generateQuestions: recherche JSON dans la réponse...')
   console.log('📝 Réponse brute reçue:')
   console.log('='.repeat(50))
@@ -173,7 +173,7 @@ Les questions doivent avoir une RÉPONSE UNIQUE et VÉRIFIABLE.`
   prompt += `\n\nRéponds UNIQUEMENT avec un tableau JSON:
 [{"question": "Question ?", "answer": "Réponse"}, ...]`
 
-  const response = await generateText(prompt, { temperature: 0.8 })
+  const response = await generateText(prompt, { temperature: 0.8, maxTokens: 2048 })
   console.log('🦙 Ollama generateQuizQuestions: recherche JSON dans la réponse...')
   console.log('📝 Réponse brute reçue:')
   console.log('='.repeat(50))
