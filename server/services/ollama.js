@@ -144,23 +144,29 @@ export async function generateRoundComment(question, player1Name, answer1, playe
   let prompt
   
   if (isMatch) {
-    prompt = `${player1Name} a répondu "${answer1}", ${player2Name} a répondu "${answer2}" - C'est un MATCH !
+    prompt = `MATCH ! ${player1Name} et ${player2Name} ont répondu la même chose (ou très similaire) : "${answer1}" et "${answer2}".
 
-Exemples de commentaires drôles:
+IMPORTANT: C'est un MATCH, donc célèbre leur connexion, leur complicité, leur synchronisation.
+
+Exemples de commentaires drôles pour un MATCH:
 - "${player1Name} et ${player2Name}, même cerveau ou vous trichez ?"
 - "Télépathie confirmée ! Flippant..."
 - "Vous avez répété avant ou quoi ?"
+- "Même longueur d'onde, même goûts, même cerveau !"
 
-Écris UNE phrase drôle et originale (différente des exemples). Max 15 mots. Pas de guillemets.`
+Écris UNE phrase drôle et originale (différente des exemples) qui célèbre leur MATCH. Max 15 mots. Pas de guillemets.`
   } else {
-    prompt = `${player1Name} a répondu "${answer1}", ${player2Name} a répondu "${answer2}" - PAS DE MATCH !
+    prompt = `PAS DE MATCH ! ${player1Name} a répondu "${answer1}", ${player2Name} a répondu "${answer2}" - Réponses DIFFÉRENTES.
 
-Exemples de commentaires drôles:
-- "${player1Name} dit ${answer1}, ${player2Name} dit ${answer2}... Vous vous connaissez vraiment ?"
+IMPORTANT: Ce n'est PAS un match, donc chambre gentiment leur désaccord, leur incompatibilité, leur différence.
+
+Exemples de commentaires drôles pour un NON-MATCH:
+- "${player1Name} dit "${answer1}", ${player2Name} dit "${answer2}"... Vous vous connaissez vraiment ?"
 - "L'incompatibilité totale ! C'est beau."
 - "Chacun dans son monde, j'adore."
+- "Deux goûts, deux couleurs, zéro point commun !"
 
-Écris UNE phrase drôle et originale (différente des exemples). Max 15 mots. Pas de guillemets.`
+Écris UNE phrase drôle et originale (différente des exemples) qui chambre leur NON-MATCH. Max 15 mots. Pas de guillemets.`
   }
 
   try {

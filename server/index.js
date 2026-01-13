@@ -308,6 +308,9 @@ io.on('connection', (socket) => {
           
           // Vérification selon le mode
           if (room.mode === 'ai' && isAIAvailable()) {
+            // Notifier que l'IA vérifie les réponses
+            io.to(roomId).emit('validating-answers')
+            
             // Mode IA : vérification intelligente
             try {
               const matchResult = await checkAnswerMatch(answer1, answer2, room.currentQuestion)

@@ -145,18 +145,18 @@ export async function generateRoundComment(question, player1Name, answer1, playe
 CONTEXTE:
 - ${player1Name} a répondu "${answer1}"
 - ${player2Name} a répondu "${answer2}"  
-- C'est un MATCH !
+- ⭐ C'EST UN MATCH ! ⭐ (Réponses identiques ou très similaires)
 
 MISSION: Écris UNE SEULE phrase drôle (max 15 mots) en français qui:
+✅ CÉLÈBRE leur connexion, leur complicité, leur synchronisation
 ✅ Utilise les prénoms ${player1Name} et ${player2Name}
-✅ Se moque gentiment d'eux ou de leur réponse
-✅ Fait une BLAGUE ou une PIQUE amicale
+✅ Fait une BLAGUE amicale sur leur "télépathie"
 
-❌ INTERDIT: Pas d'explication, pas d'analyse, pas de "les deux réponses..."
+❌ INTERDIT: Ne dis PAS "deux mondes différents" ou "incompatibilité" (c'est un MATCH !)
 
 EXEMPLES:
 - "${player1Name} et ${player2Name}, même cerveau ou vous trichez ?"
-- "Ah ${player1Name}, ${player2Name} est ton âme sœur niveau goûts douteux !"
+- "Télépathie confirmée ! Flippant..."
 - "${player2Name} a copié sur ${player1Name}, j'ai tout vu !"
 
 TA RÉPONSE (juste la blague, rien d'autre):`
@@ -166,18 +166,18 @@ TA RÉPONSE (juste la blague, rien d'autre):`
 CONTEXTE:
 - ${player1Name} a répondu "${answer1}"
 - ${player2Name} a répondu "${answer2}"
-- PAS DE MATCH !
+- ❌ PAS DE MATCH ! ❌ (Réponses DIFFÉRENTES)
 
 MISSION: Écris UNE SEULE phrase drôle (max 15 mots) en français qui:
+✅ CHAMBRE leur désaccord, leur incompatibilité, leur différence
 ✅ Utilise les prénoms ${player1Name} et ${player2Name}
-✅ Chambre l'un des deux (ou les deux) sur leur réponse
-✅ Fait une VANNE sur leur désaccord
+✅ Fait une VANNE sur leur manque de synchronisation
 
-❌ INTERDIT: Pas d'explication, pas d'analyse, pas de comparaison sérieuse
+❌ INTERDIT: Ne dis PAS "même cerveau" ou "télépathie" (c'est PAS un match !)
 
 EXEMPLES:
-- "${player1Name} dit '${answer1}'... ${player2Name}, tu le connais vraiment ?"
-- "Wow ${player2Name}, '${answer2}' ? On va en reparler après..."
+- "${player1Name} dit "${answer1}", ${player2Name} dit "${answer2}"... Vous vous connaissez vraiment ?"
+- "L'incompatibilité totale ! C'est beau."
 - "${player1Name} et ${player2Name}, vous vivez sur la même planète ou pas ?"
 
 TA RÉPONSE (juste la vanne, rien d'autre):`
