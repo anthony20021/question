@@ -117,12 +117,31 @@ Format: ["Question 1 ?", "Question 2 ?", ...]`
  * Vérifie si deux réponses sont similaires
  */
 export async function checkAnswerMatch(answer1, answer2, question) {
-  const prompt = `Question posée: "${question}"
-Réponse joueur 1: "${answer1}"
-Réponse joueur 2: "${answer2}"
+  const prompt = `Tu es un expert en détection de correspondances intelligentes. Ton but est de trouver si deux réponses désignent la MÊME CHOSE, même si elles sont formulées différemment.
 
-Ces deux réponses désignent-elles la même chose ou sont-elles très similaires ?
-Réponds en JSON: {"match": true/false, "explanation": "courte explication"}`
+Question: "${question}"
+Réponse 1: "${answer1}"
+Réponse 2: "${answer2}"
+
+RÈGLES DE MATCH (sois INTELLIGENT et GÉNÉREUX):
+
+✅ MATCH si:
+- Réponses identiques (même si orthographe différente)
+- Un nom spécifique = sa description détaillée
+  Exemples:
+  * "salade césar" = "salade avec poulet et sauce" (la césar contient ces éléments)
+  * "pizza margherita" = "pizza tomate mozzarella"
+  * "hamburger" = "burger avec pain et viande"
+- Synonymes ou variantes (ex: "McDo" = "McDonald's")
+- Même concept exprimé différemment
+
+❌ PAS DE MATCH si:
+- Réponses vraiment différentes (ex: "pizza" vs "sushi")
+- Concepts opposés
+
+IMPORTANT: Si une réponse décrit les INGRÉDIENTS ou COMPOSANTS d'une autre réponse, c'est un MATCH !
+
+Réponds UNIQUEMENT en JSON: {"match": true/false, "explanation": "courte explication"}`
 
   try {
     const response = await generateText(prompt, { temperature: 0.3 })
