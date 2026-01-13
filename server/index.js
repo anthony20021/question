@@ -8,14 +8,15 @@ import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import { 
   initAI, 
-  isAIAvailable, 
+  isAIAvailable,
+  getCurrentProvider,
   generateQuestions, 
   checkAnswerMatch, 
   generateRoundComment,
   generateQuizQuestions,
   checkQuizAnswer,
   generateQuizComment
-} from './services/openrouter.js'
+} from './services/ai.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -23,8 +24,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const questionsData = JSON.parse(readFileSync(join(__dirname, '../src/data/questions.json'), 'utf-8'))
 const allQuestions = questionsData.questions
 
-// Initialiser OpenRouter AI
-initAI()
+// Initialiser les services AI (OpenRouter + Ollama fallback)
+await initAI()
 
 const PORT = process.env.PORT || 3001
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
@@ -482,5 +483,6 @@ if (existsSync(distPath)) {
 server.listen(PORT, () => {
   console.log(`🚀 GuessLink server running on port ${PORT}`)
   console.log(`📝 ${allQuestions.length} questions classiques chargées`)
-  console.log(`🤖 OpenRouter AI: ${isAIAvailable() ? 'Disponible ✅' : 'Non disponible ❌'}`)
+  const provider = getCurrentProvider()
+  console.log(`🤖 AI: ${isAIAvailable() ? `${provider} ✅` : 'Non disponible ❌'}`)
 })
