@@ -64,8 +64,10 @@ export async function generateText(prompt, options = {}) {
   }
 
   const data = await response.json()
-  const responsePreview = data.response?.substring(0, 100).replace(/\n/g, ' ') || '(vide)'
-  console.log(`🦙 Ollama: réponse reçue en ${elapsed}s - "${responsePreview}..."`)
+  console.log(`🦙 Ollama: réponse reçue en ${elapsed}s:`)
+  console.log('--- RÉPONSE OLLAMA ---')
+  console.log(data.response || '(vide)')
+  console.log('--- FIN RÉPONSE ---')
   
   return data.response
 }
@@ -95,7 +97,8 @@ Format: ["Question 1 ?", "Question 2 ?", ...]`
       console.log(`🦙 Ollama generateQuestions: ${questions.length} questions parsées ✅`)
       return questions
     } catch (parseError) {
-      console.error('❌ Ollama JSON invalide:', jsonMatch[0].substring(0, 200))
+      console.error('❌ Ollama JSON invalide:')
+      console.error(jsonMatch[0])
       throw parseError
     }
   }
@@ -174,7 +177,8 @@ Les questions doivent avoir une RÉPONSE UNIQUE et VÉRIFIABLE.`
       console.log(`🦙 Ollama generateQuizQuestions: ${questions.length} questions parsées ✅`)
       return questions
     } catch (parseError) {
-      console.error('❌ Ollama JSON invalide:', jsonMatch[0].substring(0, 200))
+      console.error('❌ Ollama JSON invalide:')
+      console.error(jsonMatch[0])
       throw parseError
     }
   }
