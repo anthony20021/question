@@ -105,10 +105,11 @@ h2 {
   font-size: 1.8rem;
   font-weight: 600;
   margin: 0 0 0.5rem 0;
+  color: var(--text);
 }
 
 .pseudo-highlight {
-  background: linear-gradient(135deg, var(--accent), var(--warning));
+  background: linear-gradient(135deg, var(--primary), var(--accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -118,24 +119,16 @@ h2 {
 .btn-change {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-light);
   font-size: 0.85rem;
   cursor: pointer;
   text-decoration: underline;
   font-family: inherit;
+  padding: 0.25rem;
 }
 
 .btn-change:hover {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.card {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  padding: 2.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text);
 }
 
 .actions {
@@ -161,24 +154,24 @@ h2 {
 }
 
 .btn-create {
-  background: var(--gradient-2);
-  color: var(--dark);
+  background: var(--dark);
+  color: var(--white);
 }
 
 .btn-create:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(0, 206, 201, 0.4);
+  box-shadow: 0 10px 30px rgba(45, 52, 54, 0.4);
 }
 
 .btn-join {
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  color: white;
+  background: rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--glass-border);
+  color: var(--text);
 }
 
 .btn-join:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.5);
+  border-color: var(--primary);
 }
 
 .btn-icon {
@@ -189,7 +182,7 @@ h2 {
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-light);
   margin: 0.5rem 0;
 }
 
@@ -198,7 +191,7 @@ h2 {
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(45, 52, 54, 0.2);
 }
 
 .join-form {
@@ -210,10 +203,10 @@ h2 {
   flex: 1;
   padding: 1rem 1.25rem;
   font-size: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--glass-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: rgba(255, 255, 255, 0.3);
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 2px;
   font-weight: 600;
@@ -223,15 +216,15 @@ h2 {
 }
 
 .join-form input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-light);
   text-transform: none;
   letter-spacing: 0;
   font-weight: 400;
 }
 
 .join-form input:focus {
-  border-color: var(--secondary);
-  box-shadow: 0 0 20px rgba(0, 206, 201, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 20px rgba(108, 92, 231, 0.2);
 }
 
 .join-form button {
@@ -240,8 +233,8 @@ h2 {
   font-weight: 600;
   border: none;
   border-radius: 12px;
-  background: var(--secondary);
-  color: var(--dark);
+  background: var(--dark);
+  color: var(--white);
   cursor: pointer;
   transition: all 0.3s ease;
   font-family: inherit;
@@ -249,7 +242,7 @@ h2 {
 
 .join-form button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(0, 206, 201, 0.4);
+  box-shadow: 0 5px 20px rgba(45, 52, 54, 0.4);
 }
 
 .join-form button:disabled {
@@ -267,4 +260,3 @@ h2 {
   }
 }
 </style>
-

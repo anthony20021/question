@@ -59,11 +59,6 @@ const enterLobby = () => {
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  padding: 3rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .form-group {
@@ -75,8 +70,7 @@ const enterLobby = () => {
 .hint {
   margin-top: 1.5rem;
   font-size: 0.9rem;
-  opacity: 0.7;
+  color: var(--text-light);
   animation: slideUp 0.6s ease-out 0.4s both;
 }
 </style>
-
