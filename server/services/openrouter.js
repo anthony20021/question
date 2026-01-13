@@ -91,18 +91,12 @@ Exemples: "Quel est ton film préféré ?", "Quelle est ta pizza préférée ?"`
   prompt += `\n\nRéponds uniquement avec un tableau JSON de questions, sans explication.
 Format: ["Question 1 ?", "Question 2 ?", ...]`
 
-  try {
-    const response = await generateText(prompt, { temperature: 0.8 })
-    const jsonMatch = response.match(/\[[\s\S]*\]/)
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
-    }
-    return []
-  } catch (error) {
-    console.error('❌ Erreur generateQuestions:', error.message)
-    console.error('   Détails:', JSON.stringify(error.response?.data || error, null, 2))
-    return []
+  const response = await generateText(prompt, { temperature: 0.8 })
+  const jsonMatch = response.match(/\[[\s\S]*\]/)
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0])
   }
+  return []
 }
 
 /**
@@ -124,18 +118,12 @@ Par exemple: "Harry Potter" et "harry potter" = OUI
 
 Réponds en JSON: {"match": true/false, "explanation": "courte explication"}`
 
-  try {
-    const response = await generateText(prompt, { temperature: 0.3 })
-    const jsonMatch = response.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
-    }
-    return { match: false, explanation: 'Erreur d\'analyse' }
-  } catch (error) {
-    console.error('❌ Erreur checkAnswerMatch:', error.message)
-    console.error('   Détails:', JSON.stringify(error.response?.data || error, null, 2))
-    return { match: false, explanation: 'Erreur' }
+  const response = await generateText(prompt, { temperature: 0.3 })
+  const jsonMatch = response.match(/\{[\s\S]*\}/)
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0])
   }
+  return { match: false, explanation: 'Erreur d\'analyse' }
 }
 
 /**
@@ -232,17 +220,12 @@ Format EXACT:
   {"question": "Question 2 ?", "answer": "Réponse 2"}
 ]`
 
-  try {
-    const response = await generateText(prompt, { temperature: 0.8 })
-    const jsonMatch = response.match(/\[[\s\S]*\]/)
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
-    }
-    return []
-  } catch (error) {
-    console.error('❌ Erreur generateQuizQuestions:', error.message)
-    return []
+  const response = await generateText(prompt, { temperature: 0.8 })
+  const jsonMatch = response.match(/\[[\s\S]*\]/)
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0])
   }
+  return []
 }
 
 /**
@@ -264,19 +247,12 @@ La réponse du joueur est-elle CORRECTE ou ACCEPTABLE ?
 
 Réponds UNIQUEMENT en JSON: {"correct": true} ou {"correct": false}`
 
-  try {
-    const response = await generateText(prompt, { temperature: 0.2 })
-    const jsonMatch = response.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
-    }
-    return { correct: false }
-  } catch (error) {
-    console.error('❌ Erreur checkQuizAnswer:', error.message)
-    // Fallback: comparaison simple
-    const normalize = (s) => s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    return { correct: normalize(playerAnswer) === normalize(correctAnswer) }
+  const response = await generateText(prompt, { temperature: 0.2 })
+  const jsonMatch = response.match(/\{[\s\S]*\}/)
+  if (jsonMatch) {
+    return JSON.parse(jsonMatch[0])
   }
+  return { correct: false }
 }
 
 /**
