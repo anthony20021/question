@@ -1,43 +1,60 @@
 /**
  * Service AI unifié avec fallback
- * OpenRouter (cloud) → Ollama (local)
+ * OpenRouter (cloud) → Ollama API (serveur distant) → Ollama (local)
  */
 
 import * as openrouter from './openrouter.js'
+import * as ollamaAPI from './ollama-api.js'
 import * as ollama from './ollama.js'
 
-let primaryProvider = null  // 'openrouter' | 'ollama' | null
-let fallbackProvider = null // 'ollama' | null
+let primaryProvider = null  // 'openrouter' | 'ollama-api' | 'ollama' | null
+let fallbackProvider = null // 'ollama-api' | 'ollama' | null
+let secondFallbackProvider = null // 'ollama' | null
 
 /**
  * Initialise les services AI
  */
 export async function initAI() {
   console.log('🤖 Initialisation des services AI...')
-  
+
   // Essayer OpenRouter d'abord
   const openrouterOk = openrouter.initAI()
   if (openrouterOk) {
     primaryProvider = 'openrouter'
     console.log('✅ OpenRouter configuré comme provider principal')
   }
-  
+
+  // Essayer Ollama API (serveur distant) comme fallback ou principal
+  const ollamaAPIOk = await ollamaAPI.initOllamaAPI()
+  if (ollamaAPIOk) {
+    if (!primaryProvider) {
+      primaryProvider = 'ollama-api'
+      console.log('✅ Ollama API configuré comme provider principal')
+    } else {
+      fallbackProvider = 'ollama-api'
+      console.log('✅ Ollama API configuré comme fallback')
+    }
+  }
+
   // Essayer Ollama (local) comme fallback ou principal
   const ollamaOk = await ollama.initOllama()
   if (ollamaOk) {
     if (!primaryProvider) {
       primaryProvider = 'ollama'
       console.log('✅ Ollama configuré comme provider principal')
-    } else {
+    } else if (!fallbackProvider) {
       fallbackProvider = 'ollama'
       console.log('✅ Ollama configuré comme fallback')
+    } else {
+      secondFallbackProvider = 'ollama'
+      console.log('✅ Ollama configuré comme second fallback')
     }
   }
-  
+
   if (!primaryProvider) {
     console.warn('⚠️ Aucun provider AI disponible !')
   }
-  
+
   return primaryProvider !== null
 }
 
@@ -78,9 +95,43 @@ async function withFallback(fnName, ...args) {
     try {
       return await tryProvider(openrouter, 'OpenRouter')
     } catch (error) {
-      // Fallback vers Ollama
+      // Fallback vers Ollama API
+      if (fallbackProvider === 'ollama-api') {
+        console.log(`🔄 Fallback vers Ollama API pour ${fnName}...`)
+        try {
+          return await tryProvider(ollamaAPI, 'Ollama API')
+        } catch (ollamaAPIError) {
+          // Fallback vers Ollama local
+          if (secondFallbackProvider === 'ollama') {
+            console.log(`🔄 Fallback vers Ollama local pour ${fnName}...`)
+            try {
+              return await tryProvider(ollama, 'Ollama')
+            } catch (ollamaError) {
+              console.error(`❌ Tous les providers ont échoué pour ${fnName}`)
+              throw ollamaError
+            }
+          }
+          throw ollamaAPIError
+        }
+      } else if (fallbackProvider === 'ollama') {
+        // Fallback direct vers Ollama local
+        console.log(`🔄 Fallback vers Ollama local pour ${fnName}...`)
+        try {
+          return await tryProvider(ollama, 'Ollama')
+        } catch (ollamaError) {
+          console.error(`❌ Tous les providers ont échoué pour ${fnName}`)
+          throw ollamaError
+        }
+      }
+      throw error
+    }
+  } else if (primaryProvider === 'ollama-api') {
+    try {
+      return await tryProvider(ollamaAPI, 'Ollama API')
+    } catch (error) {
+      // Fallback vers Ollama local
       if (fallbackProvider === 'ollama') {
-        console.log(`🔄 Fallback vers Ollama pour ${fnName}...`)
+        console.log(`🔄 Fallback vers Ollama local pour ${fnName}...`)
         try {
           return await tryProvider(ollama, 'Ollama')
         } catch (ollamaError) {
@@ -93,7 +144,7 @@ async function withFallback(fnName, ...args) {
   } else if (primaryProvider === 'ollama') {
     return await tryProvider(ollama, 'Ollama')
   }
-  
+
   throw new Error('Aucun provider AI disponible')
 }
 
@@ -126,7 +177,7 @@ export async function generateRoundComment(question, player1Name, answer1, playe
     return await withFallback('generateRoundComment', question, player1Name, answer1, player2Name, answer2, isMatch)
   } catch (error) {
     console.error('❌ Tous les providers ont échoué pour le commentaire, fallback par défaut')
-    return isMatch 
+    return isMatch
       ? `${player1Name} et ${player2Name}, vous êtes connectés ! 🧠`
       : `${player1Name} dit "${answer1}", ${player2Name} dit "${answer2}"... Raté ! 😅`
   }
