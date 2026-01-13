@@ -55,31 +55,43 @@ export function getCurrentProvider() {
   return primaryProvider
 }
 
+const MAX_RETRIES = 2
+
 /**
- * Exécute une fonction avec fallback automatique
+ * Exécute une fonction avec retry et fallback automatique
  */
 async function withFallback(fnName, ...args) {
+  const tryProvider = async (provider, providerName, retries = MAX_RETRIES) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        return await provider[fnName](...args)
+      } catch (error) {
+        console.warn(`⚠️ ${providerName} ${fnName} tentative ${attempt}/${retries} échouée:`, error.message)
+        if (attempt === retries) throw error
+        console.log(`🔄 Retry ${fnName}...`)
+      }
+    }
+  }
+
   // Essayer le provider principal
   if (primaryProvider === 'openrouter') {
     try {
-      return await openrouter[fnName](...args)
+      return await tryProvider(openrouter, 'OpenRouter')
     } catch (error) {
-      console.warn(`⚠️ OpenRouter ${fnName} échoué:`, error.message)
-      
       // Fallback vers Ollama
       if (fallbackProvider === 'ollama') {
         console.log(`🔄 Fallback vers Ollama pour ${fnName}...`)
         try {
-          return await ollama[fnName](...args)
+          return await tryProvider(ollama, 'Ollama')
         } catch (ollamaError) {
-          console.error(`❌ Ollama ${fnName} aussi échoué:`, ollamaError.message)
+          console.error(`❌ Tous les providers ont échoué pour ${fnName}`)
           throw ollamaError
         }
       }
       throw error
     }
   } else if (primaryProvider === 'ollama') {
-    return await ollama[fnName](...args)
+    return await tryProvider(ollama, 'Ollama')
   }
   
   throw new Error('Aucun provider AI disponible')

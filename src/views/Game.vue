@@ -120,8 +120,8 @@ watch(currentRound, () => {
     <!-- Écran de génération (Mode IA) -->
     <div v-if="isGenerating" class="generating-screen">
       <div class="generating-card">
-        <span class="ai-icon">🤖</span>
-        <h2>Gemini prépare vos questions...</h2>
+        <span class="ai-icon">🦙</span>
+        <h2>L'IA prépare vos questions...</h2>
         <p class="theme-label">Thème : <span>{{ generatingTheme }}</span></p>
         <div class="ai-loader">
           <div class="ai-dot"></div>
