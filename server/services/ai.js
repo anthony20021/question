@@ -119,10 +119,17 @@ export async function checkAnswerMatch(answer1, answer2, question) {
 }
 
 /**
- * Génère un commentaire de round
+ * Génère un commentaire de round (avec fallback de secours)
  */
 export async function generateRoundComment(question, player1Name, answer1, player2Name, answer2, isMatch) {
-  return withFallback('generateRoundComment', question, player1Name, answer1, player2Name, answer2, isMatch)
+  try {
+    return await withFallback('generateRoundComment', question, player1Name, answer1, player2Name, answer2, isMatch)
+  } catch (error) {
+    console.error('❌ Tous les providers ont échoué pour le commentaire, fallback par défaut')
+    return isMatch 
+      ? `${player1Name} et ${player2Name}, vous êtes connectés ! 🧠`
+      : `${player1Name} dit "${answer1}", ${player2Name} dit "${answer2}"... Raté ! 😅`
+  }
 }
 
 /**
@@ -140,10 +147,24 @@ export async function checkQuizAnswer(playerAnswer, correctAnswer, question) {
 }
 
 /**
- * Génère un commentaire de quiz
+ * Génère un commentaire de quiz (avec fallback de secours)
  */
 export async function generateQuizComment(question, correctAnswer, player1Name, player1Answer, player1Correct, player2Name, player2Answer, player2Correct) {
-  return withFallback('generateQuizComment', question, correctAnswer, player1Name, player1Answer, player1Correct, player2Name, player2Answer, player2Correct)
+  try {
+    return await withFallback('generateQuizComment', question, correctAnswer, player1Name, player1Answer, player1Correct, player2Name, player2Answer, player2Correct)
+  } catch (error) {
+    console.error('❌ Tous les providers ont échoué pour le commentaire, fallback par défaut')
+    // Fallback de secours si tout échoue
+    if (player1Correct && player2Correct) {
+      return `${player1Name} et ${player2Name}, vous êtes des génies ! 🧠`
+    } else if (!player1Correct && !player2Correct) {
+      return `Aïe... ${player1Name} et ${player2Name}, c'était "${correctAnswer}" ! 📚`
+    } else if (player1Correct) {
+      return `Bravo ${player1Name} ! ${player2Name}, la prochaine fois peut-être ? 😅`
+    } else {
+      return `Bravo ${player2Name} ! ${player1Name}, la prochaine fois peut-être ? 😅`
+    }
+  }
 }
 
 export default {

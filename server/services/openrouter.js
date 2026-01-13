@@ -236,23 +236,25 @@ Format EXACT:
  * @returns {Promise<{correct: boolean}>}
  */
 export async function checkQuizAnswer(playerAnswer, correctAnswer, question) {
-  const prompt = `Tu es un correcteur de quiz INDULGENT. Ton but est d'accepter les réponses raisonnables.
+  const prompt = `Tu es un correcteur de quiz. Vérifie si la réponse du joueur est correcte.
 
 Question: "${question}"
-Bonne réponse officielle: "${correctAnswer}"
+Bonne réponse: "${correctAnswer}"
 Réponse du joueur: "${playerAnswer}"
 
-RÈGLES D'ACCEPTATION (sois GÉNÉREUX):
-✅ Approximations numériques OK (ex: "300 000 km/s" ≈ "299792458 m/s")
-✅ Unités différentes OK si la valeur est juste
-✅ Fautes d'orthographe OK
-✅ Synonymes OK (ex: "USA" = "États-Unis")
-✅ Réponse partielle OK si l'essentiel y est
-✅ Arrondi OK
+ACCEPTER si:
+✅ Même réponse avec fautes d'orthographe
+✅ Synonyme ou variante (ex: "USA" = "États-Unis")  
+✅ Approximation numérique raisonnable (ex: "300 000" ≈ "299792")
+✅ Arrondi acceptable
 
-❌ Refuser SEULEMENT si c'est vraiment faux
+REFUSER si:
+❌ Réponse complètement différente
+❌ "Je sais pas", "aucune idée", "je comprends pas", "?" ou réponse vide
+❌ Réponse au hasard sans rapport
 
-Réponds UNIQUEMENT: {"correct": true} ou {"correct": false}`
+La réponse "${playerAnswer}" correspond-elle à "${correctAnswer}" ?
+Réponds: {"correct": true} ou {"correct": false}`
 
   const response = await generateText(prompt, { temperature: 0.2 })
   const jsonMatch = response.match(/\{[\s\S]*\}/)

@@ -221,24 +221,25 @@ Les questions doivent avoir une RÉPONSE UNIQUE et VÉRIFIABLE.`
  * Vérifie si une réponse de quiz est correcte
  */
 export async function checkQuizAnswer(playerAnswer, correctAnswer, question) {
-  const prompt = `Tu es un correcteur de quiz INDULGENT. Ton but est d'accepter les réponses raisonnables.
+  const prompt = `Tu es un correcteur de quiz. Vérifie si la réponse du joueur est correcte.
 
 Question: "${question}"
-Bonne réponse officielle: "${correctAnswer}"
+Bonne réponse: "${correctAnswer}"
 Réponse du joueur: "${playerAnswer}"
 
-RÈGLES D'ACCEPTATION (sois GÉNÉREUX):
-✅ Approximations numériques OK (ex: "300 000 km/s" = "299792458 m/s")
-✅ Unités différentes OK si la valeur est juste
-✅ Fautes d'orthographe OK
-✅ Synonymes OK (ex: "USA" = "États-Unis")
-✅ Réponse partielle OK si l'essentiel y est
-✅ Arrondi OK
+ACCEPTER si:
+✅ Même réponse avec fautes d'orthographe
+✅ Synonyme ou variante (ex: "USA" = "États-Unis")  
+✅ Approximation numérique raisonnable (ex: "300 000" ≈ "299792")
+✅ Arrondi acceptable
 
-❌ Refuser SEULEMENT si c'est vraiment faux
+REFUSER si:
+❌ Réponse complètement différente
+❌ "Je sais pas", "aucune idée", "je comprends pas", "?" ou réponse vide
+❌ Réponse au hasard sans rapport
 
-La réponse "${playerAnswer}" est-elle ACCEPTABLE ?
-Réponds UNIQUEMENT: {"correct": true} ou {"correct": false}`
+La réponse "${playerAnswer}" correspond-elle à "${correctAnswer}" ?
+Réponds: {"correct": true} ou {"correct": false}`
 
   try {
     const response = await generateText(prompt, { temperature: 0.2 })
@@ -292,24 +293,19 @@ ${examples}
 
 Écris UNE SEULE phrase drôle et originale (différente des exemples). Maximum 20 mots. Pas de guillemets.`
 
-  try {
-    console.log(`🦙 Ollama: génération commentaire quiz...`)
-    const response = await generateText(prompt, { temperature: 1.0, maxTokens: 60 })
-    const comment = response.trim().replace(/^["'«]|["'»]$/g, '').replace(/\n/g, ' ')
-    console.log(`🦙 Ollama commentaire: "${comment}"`)
-    return comment
-  } catch (error) {
-    console.error('❌ Ollama generateQuizComment error:', error.message)
-    if (player1Correct && player2Correct) {
-      return `${player1Name} et ${player2Name}, vous êtes des génies ! 🧠`
-    } else if (!player1Correct && !player2Correct) {
-      return `Aïe... ${player1Name} et ${player2Name}, c'était "${correctAnswer}" ! 📚`
-    } else if (player1Correct) {
-      return `Bravo ${player1Name} ! ${player2Name}, on révise ce soir ? 😅`
-    } else {
-      return `Bravo ${player2Name} ! ${player1Name}, on révise ce soir ? 😅`
-    }
+  console.log(`🦙 Ollama: génération commentaire quiz...`)
+  console.log(`📝 Situation: ${situation}`)
+  
+  const response = await generateText(prompt, { temperature: 1.0, maxTokens: 60 })
+  const comment = response.trim().replace(/^["'«]|["'»]$/g, '').replace(/\n/g, ' ')
+  console.log(`🦙 Ollama commentaire généré: "${comment}"`)
+  
+  // Si le commentaire est vide ou trop court, on throw pour retry
+  if (!comment || comment.length < 5) {
+    throw new Error('Commentaire vide ou trop court')
   }
+  
+  return comment
 }
 
 export default {
