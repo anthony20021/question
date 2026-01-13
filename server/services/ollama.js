@@ -141,18 +141,36 @@ Réponds en JSON: {"match": true/false, "explanation": "courte explication"}`
  * Génère un commentaire fun sur le résultat d'une manche
  */
 export async function generateRoundComment(question, player1Name, answer1, player2Name, answer2, isMatch) {
-  const context = isMatch 
-    ? `${player1Name} et ${player2Name} ont MATCHÉ avec "${answer1}" et "${answer2}"`
-    : `PAS DE MATCH: ${player1Name} a dit "${answer1}", ${player2Name} a dit "${answer2}"`
+  let prompt
+  
+  if (isMatch) {
+    prompt = `${player1Name} a répondu "${answer1}", ${player2Name} a répondu "${answer2}" - C'est un MATCH !
 
-  const prompt = `Tu es un humoriste. ${context}
-Écris UNE phrase drôle (max 15 mots) qui chambre gentiment les joueurs.
-Utilise leurs prénoms. Pas d'explication, juste la blague.`
+Exemples de commentaires drôles:
+- "${player1Name} et ${player2Name}, même cerveau ou vous trichez ?"
+- "Télépathie confirmée ! Flippant..."
+- "Vous avez répété avant ou quoi ?"
+
+Écris UNE phrase drôle et originale (différente des exemples). Max 15 mots. Pas de guillemets.`
+  } else {
+    prompt = `${player1Name} a répondu "${answer1}", ${player2Name} a répondu "${answer2}" - PAS DE MATCH !
+
+Exemples de commentaires drôles:
+- "${player1Name} dit ${answer1}, ${player2Name} dit ${answer2}... Vous vous connaissez vraiment ?"
+- "L'incompatibilité totale ! C'est beau."
+- "Chacun dans son monde, j'adore."
+
+Écris UNE phrase drôle et originale (différente des exemples). Max 15 mots. Pas de guillemets.`
+  }
 
   try {
-    const response = await generateText(prompt, { temperature: 1.0, maxTokens: 40 })
-    return response.trim().replace(/^["'«]|["'»]$/g, '')
+    console.log(`🦙 Ollama: génération commentaire round...`)
+    const response = await generateText(prompt, { temperature: 1.0, maxTokens: 50 })
+    const comment = response.trim().replace(/^["'«]|["'»]$/g, '').replace(/\n/g, ' ')
+    console.log(`🦙 Ollama commentaire: "${comment}"`)
+    return comment
   } catch (error) {
+    console.error('❌ Ollama generateRoundComment error:', error.message)
     return isMatch 
       ? `${player1Name} et ${player2Name}, vous êtes connectés ! 🧠`
       : `${player1Name} dit "${answer1}", ${player2Name} dit "${answer2}"... Aïe ! 😅`
@@ -228,19 +246,48 @@ Réponds UNIQUEMENT: {"correct": true} ou {"correct": false}`
  */
 export async function generateQuizComment(question, correctAnswer, player1Name, player1Answer, player1Correct, player2Name, player2Answer, player2Correct) {
   let situation = ''
-  if (player1Correct && player2Correct) situation = 'Les deux ont bon'
-  else if (!player1Correct && !player2Correct) situation = 'Les deux ont faux'
-  else if (player1Correct) situation = `${player1Name} a bon, ${player2Name} a faux`
-  else situation = `${player2Name} a bon, ${player1Name} a faux`
+  let examples = ''
+  
+  if (player1Correct && player2Correct) {
+    situation = `${player1Name} et ${player2Name} ont tous les deux trouvé "${correctAnswer}"`
+    examples = `Exemples de réponses possibles:
+- "${player1Name} et ${player2Name}, vous avez Google dans la tête ou quoi ?"
+- "Double combo gagnant ! Vous me faites peur là..."
+- "OK les intellos, on se calme !"`
+  } else if (!player1Correct && !player2Correct) {
+    situation = `${player1Name} a dit "${player1Answer}", ${player2Name} a dit "${player2Answer}", mais c'était "${correctAnswer}"`
+    examples = `Exemples de réponses possibles:
+- "${player1Answer}" et "${player2Answer}"... Vous étiez où pendant les cours ?
+- "Double fail ! La honte internationale !"
+- "Même en équipe vous trouvez pas, c'est grave..."`
+  } else if (player1Correct) {
+    situation = `${player1Name} a trouvé "${correctAnswer}", mais ${player2Name} a dit "${player2Answer}"`
+    examples = `Exemples de réponses possibles:
+- "${player1Name} assure ! ${player2Name}, "${player2Answer}" sérieux ?"
+- "${player2Name} a pris un sacré vent là..."
+- "1 partout, la balle au centre ! Enfin presque..."`
+  } else {
+    situation = `${player2Name} a trouvé "${correctAnswer}", mais ${player1Name} a dit "${player1Answer}"`
+    examples = `Exemples de réponses possibles:
+- "${player2Name} en mode Einstein ! ${player1Name}... on en parle ?"
+- "${player1Name}, "${player1Answer}" ? T'as fumé quoi ?"
+- "Victoire écrasante de ${player2Name} sur ce coup !"`
+  }
 
-  const prompt = `Quiz entre ${player1Name} et ${player2Name}. ${situation}.
-Bonne réponse: "${correctAnswer}"
-Écris UNE phrase drôle (15 mots max) qui chambre gentiment. Pas d'explication.`
+  const prompt = `Tu commentes un quiz entre amis. ${situation}.
+
+${examples}
+
+Écris UNE SEULE phrase drôle et originale (différente des exemples). Maximum 20 mots. Pas de guillemets.`
 
   try {
-    const response = await generateText(prompt, { temperature: 0.9, maxTokens: 40 })
-    return response.trim().replace(/^["'«]|["'»]$/g, '')
+    console.log(`🦙 Ollama: génération commentaire quiz...`)
+    const response = await generateText(prompt, { temperature: 1.0, maxTokens: 60 })
+    const comment = response.trim().replace(/^["'«]|["'»]$/g, '').replace(/\n/g, ' ')
+    console.log(`🦙 Ollama commentaire: "${comment}"`)
+    return comment
   } catch (error) {
+    console.error('❌ Ollama generateQuizComment error:', error.message)
     if (player1Correct && player2Correct) {
       return `${player1Name} et ${player2Name}, vous êtes des génies ! 🧠`
     } else if (!player1Correct && !player2Correct) {
