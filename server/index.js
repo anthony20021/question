@@ -130,9 +130,11 @@ io.on('connection', (socket) => {
     if (room && room.creator === socket.id && room.players.length === 2 && !room.isGenerating) {
       const mode = options?.mode || 'classic'
       const theme = options?.theme || null
+      const difficulty = options?.difficulty || 'medium'
       
       room.mode = mode
       room.theme = theme
+      room.difficulty = difficulty
       
       // Mode IA ou Quiz : générer les questions
       if (mode === 'ai' || mode === 'quiz') {
@@ -142,12 +144,12 @@ io.on('connection', (socket) => {
         }
         
         room.isGenerating = true
-        io.to(roomId).emit('generating-questions', { theme, mode })
+        io.to(roomId).emit('generating-questions', { theme, mode, difficulty })
         
         try {
           if (mode === 'quiz') {
-            console.log(`🧠 Génération de questions quiz pour le thème: ${theme}`)
-            const questions = await generateQuizQuestions(theme, 10)
+            console.log(`🧠 Génération de questions quiz - thème: ${theme}, difficulté: ${difficulty}`)
+            const questions = await generateQuizQuestions(theme, 10, difficulty)
             
             if (questions.length === 0) {
               socket.emit('error', { message: 'Erreur lors de la génération des questions' })

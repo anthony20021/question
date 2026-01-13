@@ -195,12 +195,21 @@ TA RÉPONSE (juste la vanne, rien d'autre):`
  * Génère des questions de quiz culture générale avec réponses
  * @param {string} theme - Thème optionnel
  * @param {number} count - Nombre de questions
+ * @param {string} difficulty - Niveau de difficulté (easy, medium, hard)
  * @returns {Promise<Array<{question: string, answer: string}>>}
  */
-export async function generateQuizQuestions(theme = null, count = 10) {
+export async function generateQuizQuestions(theme = null, count = 10, difficulty = 'medium') {
+  const difficultyInstructions = {
+    easy: 'Questions FACILES, réponses connues de tous, niveau collège.',
+    medium: 'Questions de difficulté MOYENNE, culture générale standard.',
+    hard: 'Questions DIFFICILES pour experts, détails pointus, dates précises.'
+  }
+  
   let prompt = `Génère ${count} questions de CULTURE GÉNÉRALE pour un quiz entre amis.
 Les questions doivent avoir une RÉPONSE UNIQUE et VÉRIFIABLE.
-Varie les domaines : histoire, géographie, sciences, cinéma, musique, sport, etc.`
+Varie les domaines : histoire, géographie, sciences, cinéma, musique, sport, etc.
+
+DIFFICULTÉ: ${difficultyInstructions[difficulty] || difficultyInstructions.medium}`
 
   if (theme) {
     prompt += `\n\nThème principal: ${theme}`
@@ -288,7 +297,7 @@ ${situation}
 - ${player2Name} a répondu: "${player2Answer}" ${player2Correct ? '✅' : '❌'}
 - Bonne réponse: "${correctAnswer}"
 
-Écris UNE SEULE phrase drôle (15 mots MAX) qui chambre gentiment.
+Écris UNE SEULE phrase drôle (15 mots MAX) qui se moque clairement.
 UTILISE UNIQUEMENT les noms ${player1Name} et ${player2Name}. N'INVENTE PAS d'autres personnes.
 
 Réponse (juste la phrase, sans guillemets):`

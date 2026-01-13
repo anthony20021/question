@@ -135,8 +135,8 @@ export async function generateRoundComment(question, player1Name, answer1, playe
 /**
  * Génère des questions de quiz
  */
-export async function generateQuizQuestions(theme = null, count = 10) {
-  return withFallback('generateQuizQuestions', theme, count)
+export async function generateQuizQuestions(theme = null, count = 10, difficulty = 'medium') {
+  return withFallback('generateQuizQuestions', theme, count, difficulty)
 }
 
 /**

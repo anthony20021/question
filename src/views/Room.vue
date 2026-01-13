@@ -24,6 +24,14 @@ const copiedLink = ref(false)
 const selectedMode = ref('classic') // 'classic', 'ai' ou 'quiz'
 const selectedTheme = ref('')
 const customTheme = ref('')
+const selectedDifficulty = ref('medium') // 'easy', 'medium', 'hard'
+
+// Niveaux de difficulté pour le quiz
+const difficulties = [
+  { id: 'easy', label: '😊 Facile', description: 'Questions accessibles' },
+  { id: 'medium', label: '🤔 Moyen', description: 'Culture générale standard' },
+  { id: 'hard', label: '🔥 Difficile', description: 'Pour les experts !' },
+]
 
 // Thèmes pour le mode Points Communs IA
 const themes = [
@@ -105,7 +113,8 @@ const copyRoomLink = async () => {
 const handleStartGame = () => {
   const options = {
     mode: selectedMode.value,
-    theme: (selectedMode.value === 'ai' || selectedMode.value === 'quiz') ? finalTheme.value : null
+    theme: (selectedMode.value === 'ai' || selectedMode.value === 'quiz') ? finalTheme.value : null,
+    difficulty: selectedMode.value === 'quiz' ? selectedDifficulty.value : null
   }
   startGame(roomId.value, options)
 }
@@ -256,6 +265,21 @@ watch(selectedMode, () => {
               placeholder="Ex: Harry Potter, astronomie, jeux olympiques..."
               maxlength="50"
             />
+          </div>
+
+          <!-- Sélection de la difficulté -->
+          <p class="section-title">Niveau de difficulté</p>
+          <div class="difficulty-buttons">
+            <button 
+              v-for="diff in difficulties"
+              :key="diff.id"
+              class="difficulty-btn"
+              :class="{ active: selectedDifficulty === diff.id, [diff.id]: true }"
+              @click="selectedDifficulty = diff.id"
+            >
+              <span class="diff-label">{{ diff.label }}</span>
+              <span class="diff-desc">{{ diff.description }}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -588,6 +612,58 @@ h1 {
 
 .custom-theme {
   margin-top: 0.75rem;
+}
+
+/* Difficulty Selection */
+.difficulty-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.difficulty-btn {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid var(--glass-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.difficulty-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.difficulty-btn.active.easy {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.difficulty-btn.active.medium {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.difficulty-btn.active.hard {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.diff-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.diff-desc {
+  font-size: 0.65rem;
+  color: var(--text-light);
 }
 
 .custom-theme input {

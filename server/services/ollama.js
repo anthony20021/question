@@ -180,9 +180,17 @@ Exemples de commentaires drôles:
 /**
  * Génère des questions de quiz
  */
-export async function generateQuizQuestions(theme = null, count = 10) {
+export async function generateQuizQuestions(theme = null, count = 10, difficulty = 'medium') {
+  const difficultyInstructions = {
+    easy: 'Questions FACILES, réponses connues de tous, niveau collège.',
+    medium: 'Questions de difficulté MOYENNE, culture générale standard.',
+    hard: 'Questions DIFFICILES pour experts, détails pointus, dates précises.'
+  }
+  
   let prompt = `Génère ${count} questions de CULTURE GÉNÉRALE pour un quiz.
-Les questions doivent avoir une RÉPONSE UNIQUE et VÉRIFIABLE.`
+Les questions doivent avoir une RÉPONSE UNIQUE et VÉRIFIABLE.
+
+DIFFICULTÉ: ${difficultyInstructions[difficulty] || difficultyInstructions.medium}`
 
   if (theme) {
     prompt += `\n\nThème: ${theme}`
