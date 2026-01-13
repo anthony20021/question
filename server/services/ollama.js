@@ -38,6 +38,10 @@ export function isOllamaAvailable() {
  * Génère du texte avec Ollama
  */
 export async function generateText(prompt, options = {}) {
+  const startTime = Date.now()
+  const promptPreview = prompt.substring(0, 50).replace(/\n/g, ' ')
+  console.log(`🦙 Ollama: requête en cours... "${promptPreview}..."`)
+  
   const response = await fetch(`${OLLAMA_URL}/api/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -52,11 +56,17 @@ export async function generateText(prompt, options = {}) {
     })
   })
 
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+
   if (!response.ok) {
+    console.error(`🦙 Ollama: erreur ${response.status} après ${elapsed}s`)
     throw new Error(`Ollama error: ${response.status}`)
   }
 
   const data = await response.json()
+  const responsePreview = data.response?.substring(0, 100).replace(/\n/g, ' ') || '(vide)'
+  console.log(`🦙 Ollama: réponse reçue en ${elapsed}s - "${responsePreview}..."`)
+  
   return data.response
 }
 
