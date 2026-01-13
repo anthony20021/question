@@ -221,11 +221,23 @@ Les questions doivent avoir une RÉPONSE UNIQUE et VÉRIFIABLE.`
  * Vérifie si une réponse de quiz est correcte
  */
 export async function checkQuizAnswer(playerAnswer, correctAnswer, question) {
-  const prompt = `Question: "${question}"
-Bonne réponse: "${correctAnswer}"
+  const prompt = `Tu es un correcteur de quiz INDULGENT. Ton but est d'accepter les réponses raisonnables.
+
+Question: "${question}"
+Bonne réponse officielle: "${correctAnswer}"
 Réponse du joueur: "${playerAnswer}"
 
-La réponse est-elle correcte ? (tolérer les fautes mineures)
+RÈGLES D'ACCEPTATION (sois GÉNÉREUX):
+✅ Approximations numériques OK (ex: "300 000 km/s" = "299792458 m/s")
+✅ Unités différentes OK si la valeur est juste
+✅ Fautes d'orthographe OK
+✅ Synonymes OK (ex: "USA" = "États-Unis")
+✅ Réponse partielle OK si l'essentiel y est
+✅ Arrondi OK
+
+❌ Refuser SEULEMENT si c'est vraiment faux
+
+La réponse "${playerAnswer}" est-elle ACCEPTABLE ?
 Réponds UNIQUEMENT: {"correct": true} ou {"correct": false}`
 
   try {
