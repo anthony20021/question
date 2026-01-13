@@ -4,7 +4,7 @@
  */
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434'
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'mistral:7b'
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:7b-instruct'
 
 let isInitialized = false
 
@@ -47,7 +47,7 @@ export async function generateText(prompt, options = {}) {
       stream: false,
       options: {
         temperature: options.temperature ?? 0.7,
-        num_predict: options.maxTokens ?? 1024,
+        num_predict: options.maxTokens ?? 256,
       }
     })
   })
