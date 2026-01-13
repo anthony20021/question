@@ -183,19 +183,12 @@ EXEMPLES:
 TA RÉPONSE (juste la vanne, rien d'autre):`
   }
 
-  try {
-    const response = await generateText(prompt, { temperature: 1.0, maxTokens: 40 })
-    // Nettoyer la réponse - enlever les guillemets et préfixes potentiels
-    let comment = response.trim()
-    comment = comment.replace(/^["'«]|["'»]$/g, '')
-    comment = comment.replace(/^(Commentaire|Blague|Vanne|Réponse)\s*:\s*/i, '')
-    return comment
-  } catch (error) {
-    if (isMatch) {
-      return `${player1Name} et ${player2Name}, vous êtes connectés ! 🧠`
-    }
-    return `${player1Name} dit "${answer1}", ${player2Name} dit "${answer2}"... Aïe ! 😅`
-  }
+  const response = await generateText(prompt, { temperature: 1.0, maxTokens: 40 })
+  // Nettoyer la réponse - enlever les guillemets et préfixes potentiels
+  let comment = response.trim()
+  comment = comment.replace(/^["'«]|["'»]$/g, '')
+  comment = comment.replace(/^(Commentaire|Blague|Vanne|Réponse)\s*:\s*/i, '')
+  return comment
 }
 
 /**
@@ -300,26 +293,14 @@ UTILISE UNIQUEMENT les noms ${player1Name} et ${player2Name}. N'INVENTE PAS d'au
 
 Réponse (juste la phrase, sans guillemets):`
 
-  try {
-    const response = await generateText(prompt, { temperature: 0.9, maxTokens: 40 })
-    let comment = response.trim()
-    comment = comment.replace(/^["'«]|["'»]$/g, '')
-    // Tronquer si trop long
-    if (comment.length > 150) {
-      comment = comment.substring(0, 150) + '...'
-    }
-    return comment
-  } catch (error) {
-    if (player1Correct && player2Correct) {
-      return `${player1Name} et ${player2Name}, vous êtes des génies ! 🧠`
-    } else if (!player1Correct && !player2Correct) {
-      return `Aïe... ${player1Name} et ${player2Name}, c'était "${correctAnswer}" ! 📚`
-    } else if (player1Correct) {
-      return `Bravo ${player1Name} ! ${player2Name}, on révise ce soir ? 😅`
-    } else {
-      return `Bravo ${player2Name} ! ${player1Name}, on révise ce soir ? 😅`
-    }
+  const response = await generateText(prompt, { temperature: 0.9, maxTokens: 40 })
+  let comment = response.trim()
+  comment = comment.replace(/^["'«]|["'»]$/g, '')
+  // Tronquer si trop long
+  if (comment.length > 150) {
+    comment = comment.substring(0, 150) + '...'
   }
+  return comment
 }
 
 export default {
