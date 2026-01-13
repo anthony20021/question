@@ -20,6 +20,7 @@ const {
   gameMode,
   isGenerating,
   generatingTheme,
+  isValidating,
   aiComment,
   aiExplanation,
   errorMessage,
@@ -224,7 +225,16 @@ watch(currentRound, () => {
             </div>
 
             <div v-else class="waiting-opponent">
-              <div v-if="opponentAnswered" class="opponent-ready">
+              <div v-if="isValidating" class="validating-answers">
+                <div class="ai-loader">
+                  <span class="ai-brain">🧠</span>
+                  <div class="ai-dots">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+                <p>L'IA vérifie vos réponses...</p>
+              </div>
+              <div v-else-if="opponentAnswered" class="opponent-ready">
                 <span>✅</span> {{ opponent?.pseudo }} a répondu !
               </div>
               <div v-else class="opponent-waiting">
@@ -904,6 +914,65 @@ watch(currentRound, () => {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Validation IA */
+.validating-answers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.validating-answers p {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.ai-loader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ai-brain {
+  font-size: 2.5rem;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.ai-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.ai-dots span {
+  width: 10px;
+  height: 10px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite;
+}
+
+.ai-dots span:nth-child(1) { animation-delay: 0s; }
+.ai-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .result-section {

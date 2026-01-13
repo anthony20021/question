@@ -237,6 +237,9 @@ io.on('connection', (socket) => {
           let player1Correct = false
           let player2Correct = false
           
+          // Notifier que l'IA valide les réponses
+          io.to(roomId).emit('validating-answers')
+          
           // Vérifier les réponses avec l'IA
           try {
             const [result1, result2] = await Promise.all([

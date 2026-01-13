@@ -26,6 +26,7 @@ const isLastQuestion = ref(false)
 const gameMode = ref('classic')
 const isGenerating = ref(false)
 const generatingTheme = ref('')
+const isValidating = ref(false)
 const aiComment = ref('')
 const aiExplanation = ref('')
 const errorMessage = ref('')
@@ -107,10 +108,15 @@ socket.on('opponent-answered', () => {
   opponentAnswered.value = true
 })
 
+socket.on('validating-answers', () => {
+  isValidating.value = true
+})
+
 socket.on('round-result', (result) => {
   roundResult.value = result
   scores.value = result.scores
   opponentAnswered.value = false
+  isValidating.value = false
   isLastQuestion.value = result.isLastQuestion || false
   aiComment.value = result.aiComment || ''
   aiExplanation.value = result.aiExplanation || ''
@@ -203,6 +209,7 @@ export function useSocket() {
     gameMode.value = 'classic'
     isGenerating.value = false
     generatingTheme.value = ''
+    isValidating.value = false
     aiComment.value = ''
     aiExplanation.value = ''
     errorMessage.value = ''
@@ -230,6 +237,7 @@ export function useSocket() {
     gameMode,
     isGenerating,
     generatingTheme,
+    isValidating,
     aiComment,
     aiExplanation,
     errorMessage,
