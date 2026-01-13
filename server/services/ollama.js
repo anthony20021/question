@@ -88,22 +88,28 @@ Exemples: "Quel est ton film préféré ?", "Quelle est ta pizza préférée ?"`
 Format: ["Question 1 ?", "Question 2 ?", ...]`
 
   const response = await generateText(prompt, { temperature: 0.8 })
-  console.log('🦙 Ollama generateQuestions: parsing JSON...')
+  console.log('🦙 Ollama generateQuestions: recherche JSON dans la réponse...')
+  console.log('📝 Réponse brute reçue:')
+  console.log('='.repeat(50))
+  console.log(response)
+  console.log('='.repeat(50))
   
   const jsonMatch = response.match(/\[[\s\S]*\]/)
   if (jsonMatch) {
+    console.log('✅ JSON trouvé, tentative de parsing...')
     try {
       const questions = JSON.parse(jsonMatch[0])
       console.log(`🦙 Ollama generateQuestions: ${questions.length} questions parsées ✅`)
       return questions
     } catch (parseError) {
-      console.error('❌ Ollama JSON invalide:')
+      console.error('❌ Erreur parsing JSON:', parseError.message)
+      console.error('JSON extrait:')
       console.error(jsonMatch[0])
       throw parseError
     }
   }
   
-  console.error('❌ Ollama: pas de JSON trouvé dans la réponse')
+  console.error('❌ Aucun tableau JSON [ ] trouvé dans la réponse ci-dessus')
   throw new Error('Pas de JSON dans la réponse Ollama')
 }
 
@@ -168,22 +174,28 @@ Les questions doivent avoir une RÉPONSE UNIQUE et VÉRIFIABLE.`
 [{"question": "Question ?", "answer": "Réponse"}, ...]`
 
   const response = await generateText(prompt, { temperature: 0.8 })
-  console.log('🦙 Ollama generateQuizQuestions: parsing JSON...')
+  console.log('🦙 Ollama generateQuizQuestions: recherche JSON dans la réponse...')
+  console.log('📝 Réponse brute reçue:')
+  console.log('='.repeat(50))
+  console.log(response)
+  console.log('='.repeat(50))
   
   const jsonMatch = response.match(/\[[\s\S]*\]/)
   if (jsonMatch) {
+    console.log('✅ JSON trouvé, tentative de parsing...')
     try {
       const questions = JSON.parse(jsonMatch[0])
       console.log(`🦙 Ollama generateQuizQuestions: ${questions.length} questions parsées ✅`)
       return questions
     } catch (parseError) {
-      console.error('❌ Ollama JSON invalide:')
+      console.error('❌ Erreur parsing JSON:', parseError.message)
+      console.error('JSON extrait:')
       console.error(jsonMatch[0])
       throw parseError
     }
   }
   
-  console.error('❌ Ollama: pas de JSON trouvé dans la réponse')
+  console.error('❌ Aucun tableau JSON [ ] trouvé dans la réponse ci-dessus')
   throw new Error('Pas de JSON dans la réponse Ollama')
 }
 
