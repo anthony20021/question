@@ -5,7 +5,7 @@ import { useSocket } from '../composables/useSocket'
 
 const route = useRoute()
 const router = useRouter()
-const { 
+const {
   players,
   messages,
   currentQuestion,
@@ -24,11 +24,14 @@ const {
   aiComment,
   aiExplanation,
   errorMessage,
+  lastGameOptions,
+  isCreator,
   joinRoom,
   leaveRoom,
   submitAnswer,
   nextRound,
-  sendMessage
+  sendMessage,
+  startGame
 } = useSocket()
 
 const pseudo = ref('')
@@ -71,7 +74,7 @@ onMounted(() => {
     router.push('/')
     return
   }
-  
+
   joinRoom(roomId.value, pseudo.value)
 })
 
@@ -102,6 +105,12 @@ const handleSendMessage = () => {
 
 const toggleChat = () => {
   chatOpen.value = !chatOpen.value
+}
+
+const handleReplay = () => {
+  if (lastGameOptions.value && isCreator.value) {
+    startGame(roomId.value, lastGameOptions.value)
+  }
 }
 
 // Reset quand nouveau round
@@ -149,7 +158,7 @@ watch(currentRound, () => {
           <span v-else-if="isAIMode" class="mode-badge ai">🤖 Mode IA</span>
           <span v-else class="mode-badge classic">📝 Classique</span>
         </p>
-        
+
         <div class="final-scores">
           <div class="final-player" :class="{ winner: myScore > opponentScore }">
             <span class="final-name">{{ pseudo }}</span>
@@ -170,9 +179,14 @@ watch(currentRound, () => {
           <span v-else>🤝 Égalité parfaite !</span>
         </div>
 
-        <button class="btn-back-lobby" @click="router.push('/lobby')">
-          Retour au lobby
-        </button>
+        <div class="game-over-actions">
+          <button v-if="isCreator && lastGameOptions" class="btn-replay" @click="handleReplay">
+            🔄 Rejouer
+          </button>
+          <button class="btn-back-lobby" @click="router.push('/lobby')">
+            Retour au lobby
+          </button>
+        </div>
       </div>
     </div>
 
@@ -208,18 +222,9 @@ watch(currentRound, () => {
           <!-- Phase de réponse -->
           <div v-if="!roundResult" class="answer-section">
             <div v-if="!hasSubmitted" class="input-group">
-              <input 
-                v-model="answer"
-                type="text"
-                placeholder="Ta réponse..."
-                @keyup.enter="handleSubmit"
-                :disabled="hasSubmitted"
-              />
-              <button 
-                class="btn-submit"
-                @click="handleSubmit"
-                :disabled="!answer.trim()"
-              >
+              <input v-model="answer" type="text" placeholder="Ta réponse..." @keyup.enter="handleSubmit"
+                :disabled="hasSubmitted" />
+              <button class="btn-submit" @click="handleSubmit" :disabled="!answer.trim()">
                 Valider ✓
               </button>
             </div>
@@ -249,18 +254,20 @@ watch(currentRound, () => {
             <!-- Mode Quiz -->
             <template v-if="isQuizMode">
               <div class="quiz-results">
-                <div class="quiz-answer-card" :class="{ correct: roundResult.player1.correct, wrong: !roundResult.player1.correct }">
+                <div class="quiz-answer-card"
+                  :class="{ correct: roundResult.player1.correct, wrong: !roundResult.player1.correct }">
                   <span class="quiz-status">{{ roundResult.player1.correct ? '✅' : '❌' }}</span>
                   <span class="quiz-player">{{ roundResult.player1.pseudo }}</span>
                   <span class="quiz-answer">{{ roundResult.player1.answer }}</span>
                 </div>
-                <div class="quiz-answer-card" :class="{ correct: roundResult.player2.correct, wrong: !roundResult.player2.correct }">
+                <div class="quiz-answer-card"
+                  :class="{ correct: roundResult.player2.correct, wrong: !roundResult.player2.correct }">
                   <span class="quiz-status">{{ roundResult.player2.correct ? '✅' : '❌' }}</span>
                   <span class="quiz-player">{{ roundResult.player2.pseudo }}</span>
                   <span class="quiz-answer">{{ roundResult.player2.answer }}</span>
                 </div>
               </div>
-              
+
               <div class="correct-answer-box">
                 <span class="correct-label">Bonne réponse</span>
                 <span class="correct-value">{{ roundResult.correctAnswer }}</span>
@@ -294,11 +301,7 @@ watch(currentRound, () => {
             </div>
 
             <div class="next-section">
-              <button 
-                class="btn-next"
-                @click="handleNextRound"
-                :disabled="isReadyForNext"
-              >
+              <button class="btn-next" @click="handleNextRound" :disabled="isReadyForNext">
                 <template v-if="isReadyForNext">
                   En attente ({{ readyCount }}/2)
                 </template>
@@ -327,24 +330,14 @@ watch(currentRound, () => {
           <div v-if="messages.length === 0" class="no-messages">
             Dis bonjour ! 👋
           </div>
-          <div 
-            v-for="msg in messages" 
-            :key="msg.id" 
-            class="message"
-            :class="{ own: msg.pseudo === pseudo }"
-          >
+          <div v-for="msg in messages" :key="msg.id" class="message" :class="{ own: msg.pseudo === pseudo }">
             <span class="message-author">{{ msg.pseudo }}</span>
             <span class="message-content">{{ msg.message }}</span>
           </div>
         </div>
         <div class="chat-input">
-          <input 
-            v-model="newMessage" 
-            type="text" 
-            placeholder="Message..."
-            @keyup.enter="handleSendMessage"
-            maxlength="200"
-          />
+          <input v-model="newMessage" type="text" placeholder="Message..." @keyup.enter="handleSendMessage"
+            maxlength="200" />
           <button @click="handleSendMessage" :disabled="!newMessage.trim()">
             ➤
           </button>
@@ -367,24 +360,14 @@ watch(currentRound, () => {
           <div v-if="messages.length === 0" class="no-messages">
             Dis bonjour ! 👋
           </div>
-          <div 
-            v-for="msg in messages" 
-            :key="msg.id" 
-            class="message"
-            :class="{ own: msg.pseudo === pseudo }"
-          >
+          <div v-for="msg in messages" :key="msg.id" class="message" :class="{ own: msg.pseudo === pseudo }">
             <span class="message-author">{{ msg.pseudo }}</span>
             <span class="message-content">{{ msg.message }}</span>
           </div>
         </div>
         <div class="chat-input">
-          <input 
-            v-model="newMessage" 
-            type="text" 
-            placeholder="Message..."
-            @keyup.enter="handleSendMessage"
-            maxlength="200"
-          />
+          <input v-model="newMessage" type="text" placeholder="Message..." @keyup.enter="handleSendMessage"
+            maxlength="200" />
           <button @click="handleSendMessage" :disabled="!newMessage.trim()">
             ➤
           </button>
@@ -421,8 +404,15 @@ watch(currentRound, () => {
 }
 
 @keyframes floatIn {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .ai-icon {
@@ -433,8 +423,15 @@ watch(currentRound, () => {
 }
 
 @keyframes robotBounce {
-  0%, 100% { transform: translateY(0) rotate(-5deg); }
-  50% { transform: translateY(-15px) rotate(5deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+
+  50% {
+    transform: translateY(-15px) rotate(5deg);
+  }
 }
 
 .generating-card h2 {
@@ -469,12 +466,27 @@ watch(currentRound, () => {
   animation: dotPulse 1.4s ease-in-out infinite;
 }
 
-.ai-dot:nth-child(2) { animation-delay: 0.2s; }
-.ai-dot:nth-child(3) { animation-delay: 0.4s; }
+.ai-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ai-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes dotPulse {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
-  40% { transform: scale(1); opacity: 1; }
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .generating-hint {
@@ -498,8 +510,15 @@ watch(currentRound, () => {
 }
 
 @keyframes slideDown {
-  from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
-  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+  from {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Mode badges */
@@ -580,8 +599,15 @@ watch(currentRound, () => {
 }
 
 @keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ai-comment-icon {
@@ -622,8 +648,15 @@ watch(currentRound, () => {
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .trophy {
@@ -634,8 +667,15 @@ watch(currentRound, () => {
 }
 
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-15px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
 }
 
 .game-over-card h1 {
@@ -707,6 +747,31 @@ watch(currentRound, () => {
   font-weight: 600;
   color: var(--text);
   margin-bottom: 2rem;
+}
+
+.game-over-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.btn-replay {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: var(--white);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.btn-replay:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(108, 92, 231, 0.4);
 }
 
 .btn-back-lobby {
@@ -814,8 +879,15 @@ watch(currentRound, () => {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .question {
@@ -913,7 +985,9 @@ watch(currentRound, () => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Validation IA */
@@ -944,8 +1018,15 @@ watch(currentRound, () => {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
 }
 
 .ai-dots {
@@ -961,18 +1042,39 @@ watch(currentRound, () => {
   animation: bounce 1.4s ease-in-out infinite;
 }
 
-.ai-dots span:nth-child(1) { animation-delay: 0s; }
-.ai-dots span:nth-child(2) { animation-delay: 0.2s; }
-.ai-dots span:nth-child(3) { animation-delay: 0.4s; }
+.ai-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.ai-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.ai-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes bounce {
-  0%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
+
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .result-section {
@@ -988,9 +1090,17 @@ watch(currentRound, () => {
 }
 
 @keyframes celebrate {
-  0% { transform: scale(0.8); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.8);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .result-icon {
@@ -1209,8 +1319,15 @@ watch(currentRound, () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message.own {
@@ -1391,59 +1508,59 @@ watch(currentRound, () => {
     padding: 0.5rem;
   }
 
-  
-  
+
+
   .game-container {
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
-  
+
   .game-area {
     gap: 0.75rem;
   }
-  
+
   .card {
     padding: 1.5rem;
   }
-  
+
   .desktop-chat {
     display: none;
   }
-  
+
   .chat-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  
+
   .mobile-chat {
     display: flex;
   }
-  
+
   .chat-overlay {
     display: block;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
   }
-  
+
   .chat-overlay {
     opacity: 1;
     pointer-events: auto;
   }
-  
+
   .input-group {
     flex-direction: column;
   }
-  
+
   .answers-compare {
     flex-direction: column;
   }
-  
+
   .quiz-results {
     flex-direction: column;
   }
-  
+
   .vs {
     transform: rotate(90deg);
   }

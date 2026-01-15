@@ -1,14 +1,14 @@
 /**
  * Service AI unifié avec fallback
- * OpenRouter (cloud) → Ollama API (serveur distant) → Ollama (local)
+ * Ollama API (serveur distant) → OpenRouter (cloud) → Ollama (local)
  */
 
 import * as openrouter from './openrouter.js'
 import * as ollamaAPI from './ollama-api.js'
 import * as ollama from './ollama.js'
 
-let primaryProvider = null  // 'openrouter' | 'ollama-api' | 'ollama' | null
-let fallbackProvider = null // 'ollama-api' | 'ollama' | null
+let primaryProvider = null  // 'ollama-api' | 'openrouter' | 'ollama' | null
+let fallbackProvider = null // 'openrouter' | 'ollama' | null
 let secondFallbackProvider = null // 'ollama' | null
 
 /**
@@ -17,26 +17,26 @@ let secondFallbackProvider = null // 'ollama' | null
 export async function initAI() {
   console.log('🤖 Initialisation des services AI...')
 
-  // Essayer OpenRouter d'abord
-  const openrouterOk = openrouter.initAI()
-  if (openrouterOk) {
-    primaryProvider = 'openrouter'
-    console.log('✅ OpenRouter configuré comme provider principal')
-  }
-
-  // Essayer Ollama API (serveur distant) comme fallback ou principal
+  // Essayer Ollama API (serveur distant) en priorité
   const ollamaAPIOk = await ollamaAPI.initOllamaAPI()
   if (ollamaAPIOk) {
+    primaryProvider = 'ollama-api'
+    console.log('✅ Ollama API configuré comme provider principal')
+  }
+
+  // Essayer OpenRouter comme fallback ou principal
+  const openrouterOk = openrouter.initAI()
+  if (openrouterOk) {
     if (!primaryProvider) {
-      primaryProvider = 'ollama-api'
-      console.log('✅ Ollama API configuré comme provider principal')
+      primaryProvider = 'openrouter'
+      console.log('✅ OpenRouter configuré comme provider principal')
     } else {
-      fallbackProvider = 'ollama-api'
-      console.log('✅ Ollama API configuré comme fallback')
+      fallbackProvider = 'openrouter'
+      console.log('✅ OpenRouter configuré comme fallback')
     }
   }
 
-  // Essayer Ollama (local) comme fallback ou principal
+  // Essayer Ollama (local) comme dernier fallback
   const ollamaOk = await ollama.initOllama()
   if (ollamaOk) {
     if (!primaryProvider) {
@@ -91,16 +91,16 @@ async function withFallback(fnName, ...args) {
   }
 
   // Essayer le provider principal
-  if (primaryProvider === 'openrouter') {
+  if (primaryProvider === 'ollama-api') {
     try {
-      return await tryProvider(openrouter, 'OpenRouter')
+      return await tryProvider(ollamaAPI, 'Ollama API')
     } catch (error) {
-      // Fallback vers Ollama API
-      if (fallbackProvider === 'ollama-api') {
-        console.log(`🔄 Fallback vers Ollama API pour ${fnName}...`)
+      // Fallback vers OpenRouter
+      if (fallbackProvider === 'openrouter') {
+        console.log(`🔄 Fallback vers OpenRouter pour ${fnName}...`)
         try {
-          return await tryProvider(ollamaAPI, 'Ollama API')
-        } catch (ollamaAPIError) {
+          return await tryProvider(openrouter, 'OpenRouter')
+        } catch (openrouterError) {
           // Fallback vers Ollama local
           if (secondFallbackProvider === 'ollama') {
             console.log(`🔄 Fallback vers Ollama local pour ${fnName}...`)
@@ -111,7 +111,7 @@ async function withFallback(fnName, ...args) {
               throw ollamaError
             }
           }
-          throw ollamaAPIError
+          throw openrouterError
         }
       } else if (fallbackProvider === 'ollama') {
         // Fallback direct vers Ollama local
@@ -125,9 +125,9 @@ async function withFallback(fnName, ...args) {
       }
       throw error
     }
-  } else if (primaryProvider === 'ollama-api') {
+  } else if (primaryProvider === 'openrouter') {
     try {
-      return await tryProvider(ollamaAPI, 'Ollama API')
+      return await tryProvider(openrouter, 'OpenRouter')
     } catch (error) {
       // Fallback vers Ollama local
       if (fallbackProvider === 'ollama') {

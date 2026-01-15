@@ -31,6 +31,9 @@ const aiComment = ref('')
 const aiExplanation = ref('')
 const errorMessage = ref('')
 
+// Options de la dernière partie (pour rejouer)
+const lastGameOptions = ref(null)
+
 // Connexion
 socket.on('connect', () => {
   isConnected.value = true
@@ -175,6 +178,8 @@ export function useSocket() {
   }
 
   const startGame = (roomId, options = {}) => {
+    // Sauvegarder les options pour pouvoir rejouer
+    lastGameOptions.value = options
     socket.emit('start-game', { roomId, options })
   }
 
@@ -241,6 +246,8 @@ export function useSocket() {
     aiComment,
     aiExplanation,
     errorMessage,
+    // Options dernière partie
+    lastGameOptions,
     // Actions
     connect,
     disconnect,
