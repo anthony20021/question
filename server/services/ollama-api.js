@@ -5,7 +5,7 @@
 
 const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'http://87.91.77.59:3000'
 const OLLAMA_API_TOKEN = process.env.OLLAMA_API_TOKEN
-const OLLAMA_API_MODEL = process.env.OLLAMA_API_MODEL || 'nemotron-3-nano:latest'
+const OLLAMA_API_MODEL = process.env.OLLAMA_API_MODEL || 'gemma3:27b'
 
 let isInitialized = false
 
