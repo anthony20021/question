@@ -1,13 +1,18 @@
-import { ref, shallowRef, triggerRef } from 'vue'
+import { ref, shallowRef, triggerRef, computed } from 'vue'
 import { io } from 'socket.io-client'
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001'
+// En dev (vite), le front (5173) et le backend (3001) sont sur des ports différents.
+// En build/prod, tout est servi par le même serveur : on utilise alors l'origine de la page
+// (ce qui fonctionne aussi bien en local qu'à distance via un tunnel).
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
+  || (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin)
 
 const socket = io(SOCKET_URL, {
   autoConnect: false
 })
 
 const isConnected = ref(false)
+const mySocketId = ref(null)
 const players = shallowRef([])
 const messages = shallowRef([])
 const isCreator = ref(false)
@@ -27,8 +32,37 @@ const gameMode = ref('classic')
 const isGenerating = ref(false)
 const generatingTheme = ref('')
 const isValidating = ref(false)
+
+// Écran de génération : messages qui tournent + timer (la génération peut prendre 15-30s)
+const generatingMessages = [
+  "L'IA fouille sa mémoire pour trouver un angle original...",
+  "Elle évite les questions trop vues, ça prend un peu de temps...",
+  "Recherche du bon équilibre entre drôle et malin...",
+  "Elle élimine les idées trop banales une par une...",
+  "Encore un peu de patience, elle peaufine les formulations...",
+  "Elle vérifie que les questions ne se ressemblent pas trop...",
+]
+const generatingSeconds = ref(0)
+const currentGeneratingMessage = computed(() => {
+  return generatingMessages[Math.floor(generatingSeconds.value / 3) % generatingMessages.length]
+})
+let generatingInterval = null
+function startGeneratingTimer() {
+  generatingSeconds.value = 0
+  if (generatingInterval) clearInterval(generatingInterval)
+  generatingInterval = setInterval(() => { generatingSeconds.value++ }, 1000)
+}
+function stopGeneratingTimer() {
+  if (generatingInterval) {
+    clearInterval(generatingInterval)
+    generatingInterval = null
+  }
+}
+
 const aiComment = ref('')
 const aiExplanation = ref('')
+const matchStreak = ref(0)
+const gameSummary = ref('')
 const errorMessage = ref('')
 
 // Options de la dernière partie (pour rejouer)
@@ -37,11 +71,13 @@ const lastGameOptions = ref(null)
 // Connexion
 socket.on('connect', () => {
   isConnected.value = true
+  mySocketId.value = socket.id
   console.log('🔌 Connecté au serveur')
 })
 
 socket.on('disconnect', () => {
   isConnected.value = false
+  mySocketId.value = null
   players.value = []
   messages.value = []
   triggerRef(players)
@@ -81,11 +117,13 @@ socket.on('chat-message', (message) => {
 socket.on('generating-questions', ({ theme }) => {
   isGenerating.value = true
   generatingTheme.value = theme || 'variés'
+  startGeneratingTimer()
 })
 
 socket.on('error', ({ message }) => {
   errorMessage.value = message
   isGenerating.value = false
+  stopGeneratingTimer()
   setTimeout(() => {
     errorMessage.value = ''
   }, 5000)
@@ -96,6 +134,7 @@ socket.on('game-started', ({ question, round, totalQuestions: total, mode }) => 
   gameStarted.value = true
   gameOver.value = false
   isGenerating.value = false
+  stopGeneratingTimer()
   currentQuestion.value = question
   currentRound.value = round
   totalQuestions.value = total
@@ -105,6 +144,7 @@ socket.on('game-started', ({ question, round, totalQuestions: total, mode }) => 
   isLastQuestion.value = false
   aiComment.value = ''
   aiExplanation.value = ''
+  matchStreak.value = 0
 })
 
 socket.on('opponent-answered', () => {
@@ -123,6 +163,7 @@ socket.on('round-result', (result) => {
   isLastQuestion.value = result.isLastQuestion || false
   aiComment.value = result.aiComment || ''
   aiExplanation.value = result.aiExplanation || ''
+  matchStreak.value = result.matchStreak || 0
   triggerRef(roundResult)
   triggerRef(scores)
 })
@@ -149,10 +190,11 @@ socket.on('new-round', ({ question, round, totalQuestions: total, mode }) => {
   aiExplanation.value = ''
 })
 
-socket.on('game-over', ({ scores: finalScores, mode }) => {
+socket.on('game-over', ({ scores: finalScores, mode, gameSummary: summary }) => {
   gameOver.value = true
   scores.value = finalScores
   gameMode.value = mode || 'classic'
+  gameSummary.value = summary || ''
   triggerRef(scores)
 })
 
@@ -214,9 +256,12 @@ export function useSocket() {
     gameMode.value = 'classic'
     isGenerating.value = false
     generatingTheme.value = ''
+    stopGeneratingTimer()
     isValidating.value = false
     aiComment.value = ''
     aiExplanation.value = ''
+    matchStreak.value = 0
+    gameSummary.value = ''
     errorMessage.value = ''
     triggerRef(players)
     triggerRef(messages)
@@ -225,6 +270,7 @@ export function useSocket() {
   return {
     // État
     isConnected,
+    mySocketId,
     players,
     messages,
     isCreator,
@@ -242,9 +288,13 @@ export function useSocket() {
     gameMode,
     isGenerating,
     generatingTheme,
+    generatingSeconds,
+    currentGeneratingMessage,
     isValidating,
     aiComment,
     aiExplanation,
+    matchStreak,
+    gameSummary,
     errorMessage,
     // Options dernière partie
     lastGameOptions,

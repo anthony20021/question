@@ -5,14 +5,19 @@ import { useSocket } from '../composables/useSocket'
 
 const route = useRoute()
 const router = useRouter()
-const { 
-  players, 
-  isConnected, 
-  gameStarted, 
-  isCreator, 
-  joinRoom, 
-  leaveRoom, 
-  startGame 
+const {
+  players,
+  isConnected,
+  mySocketId,
+  gameStarted,
+  isCreator,
+  isGenerating,
+  generatingTheme,
+  generatingSeconds,
+  currentGeneratingMessage,
+  joinRoom,
+  leaveRoom,
+  startGame
 } = useSocket()
 
 const pseudo = ref('')
@@ -57,9 +62,9 @@ const quizThemes = [
   { id: 'custom', label: '✏️ Personnalisé', value: '' },
 ]
 
-// L'autre joueur (pas nous)
+// L'autre joueur (pas nous), identifié par son ID socket (robuste même en cas de pseudo identique)
 const otherPlayer = computed(() => {
-  return players.value.find(p => p.pseudo !== pseudo.value)
+  return players.value.find(p => p.id !== mySocketId.value)
 })
 
 // Thème final à envoyer
@@ -139,6 +144,22 @@ watch(selectedMode, () => {
 
 <template>
   <div class="room">
+    <div v-if="isGenerating" class="generating-screen">
+      <div class="generating-card">
+        <span class="ai-icon">🦙</span>
+        <h2>L'IA prépare vos questions...</h2>
+        <p class="theme-label">Thème : <span>{{ generatingTheme }}</span></p>
+        <div class="ai-loader">
+          <div class="ai-dot"></div>
+          <div class="ai-dot"></div>
+          <div class="ai-dot"></div>
+        </div>
+        <p class="generating-hint">{{ currentGeneratingMessage }}</p>
+        <p class="generating-timer">⏱ {{ generatingSeconds }}s</p>
+      </div>
+    </div>
+
+    <template v-else>
     <div class="room-header">
       <h1>Room <span class="room-code">{{ roomId }}</span></h1>
       <div class="copy-buttons">
@@ -317,6 +338,7 @@ watch(selectedMode, () => {
         </button>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -327,6 +349,98 @@ watch(selectedMode, () => {
   align-items: center;
   width: 100%;
   max-width: 550px;
+}
+
+.generating-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 60vh;
+  padding: 1rem;
+}
+
+.generating-card {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 3rem;
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  text-align: center;
+  max-width: 450px;
+  width: 100%;
+  animation: floatIn 0.5s ease-out;
+}
+
+@keyframes floatIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.ai-icon {
+  font-size: 5rem;
+  display: block;
+  margin-bottom: 1rem;
+  animation: robotBounce 1.5s ease-in-out infinite;
+}
+
+@keyframes robotBounce {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-15px) rotate(5deg); }
+}
+
+.generating-card h2 {
+  font-size: 1.5rem;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.theme-label {
+  color: var(--text-light);
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+.theme-label span {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.ai-loader {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.ai-dot {
+  width: 12px;
+  height: 12px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.ai-dot:nth-child(2) { animation-delay: 0.2s; }
+.ai-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.generating-hint {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  min-height: 2.4em;
+}
+
+.generating-timer {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  opacity: 0.6;
+  margin-top: 0.5rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .room-header {

@@ -15,7 +15,8 @@ import {
   generateRoundComment,
   generateQuizQuestions,
   checkQuizAnswer,
-  generateQuizComment
+  generateQuizComment,
+  generateGameSummary
 } from './services/ai.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -91,7 +92,9 @@ io.on('connection', (socket) => {
         scores: {},
         round: 0,
         totalQuestions: 0,
-        isGenerating: false
+        isGenerating: false,
+        matchStreak: 0,
+        bestStreak: 0
       })
     }
     
@@ -135,6 +138,8 @@ io.on('connection', (socket) => {
       room.mode = mode
       room.theme = theme
       room.difficulty = difficulty
+      room.matchStreak = 0
+      room.bestStreak = 0
       
       // Mode IA ou Quiz : générer les questions
       if (mode === 'ai' || mode === 'quiz') {
@@ -231,7 +236,8 @@ io.on('connection', (socket) => {
         const player2Name = room.players.find(p => p.id === player2Id)?.pseudo || 'Joueur 2'
         
         let aiComment = null
-        
+        let aiExplanation = null
+
         // MODE QUIZ : chaque joueur est évalué individuellement
         if (room.mode === 'quiz') {
           let player1Correct = false
@@ -310,39 +316,49 @@ io.on('connection', (socket) => {
           if (room.mode === 'ai' && isAIAvailable()) {
             // Notifier que l'IA vérifie les réponses
             io.to(roomId).emit('validating-answers')
-            
+
             // Mode IA : vérification intelligente
             try {
               const matchResult = await checkAnswerMatch(answer1, answer2, room.currentQuestion)
               isMatch = matchResult.match
+              aiExplanation = matchResult.explanation || null
             } catch (error) {
               // Fallback sur la comparaison simple
               isMatch = simpleAnswerMatch(answer1, answer2)
             }
-            
+
+            // Mise à jour du streak de matchs consécutifs
+            const previousStreak = room.matchStreak || 0
+            room.matchStreak = isMatch ? previousStreak + 1 : 0
+            room.bestStreak = Math.max(room.bestStreak || 0, room.matchStreak)
+            const brokenStreak = (!isMatch && previousStreak >= 2) ? previousStreak : 0
+
             // Générer un commentaire fun
             try {
               console.log(`🤖 Génération commentaire pour ${player1Name} vs ${player2Name}...`)
-              aiComment = await generateRoundComment(room.currentQuestion, player1Name, answer1, player2Name, answer2, isMatch)
+              aiComment = await generateRoundComment(
+                room.currentQuestion, player1Name, answer1, player2Name, answer2, isMatch,
+                { streak: room.matchStreak, brokenStreak }
+              )
               console.log(`💬 Commentaire généré: ${aiComment}`)
             } catch (error) {
               console.error('❌ Erreur génération commentaire:', error.message)
-              aiComment = isMatch 
-                ? `${player1Name} et ${player2Name}, vous êtes sur la même longueur d'onde ! 🧠` 
+              aiComment = isMatch
+                ? `${player1Name} et ${player2Name}, vous êtes sur la même longueur d'onde ! 🧠`
                 : `${player1Name} et ${player2Name}, c'est pas encore ça ! 🎲`
             }
-            
+
             // S'assurer qu'on a toujours un commentaire
             if (!aiComment || aiComment.trim() === '') {
-              aiComment = isMatch 
-                ? `Bravo ${player1Name} et ${player2Name}, vous vous comprenez ! ✨` 
+              aiComment = isMatch
+                ? `Bravo ${player1Name} et ${player2Name}, vous vous comprenez ! ✨`
                 : `${player1Name} dit "${answer1}", ${player2Name} dit "${answer2}"... Pas facile hein ! 😄`
             }
           } else {
             // Mode classique : comparaison simple
             isMatch = simpleAnswerMatch(answer1, answer2)
           }
-          
+
           if (isMatch) {
             room.scores[player1Id] = (room.scores[player1Id] || 0) + 1
             room.scores[player2Id] = (room.scores[player2Id] || 0) + 1
@@ -367,6 +383,8 @@ io.on('connection', (socket) => {
             scores: room.scores,
             isLastQuestion,
             aiComment,
+            aiExplanation,
+            matchStreak: room.matchStreak,
             mode: room.mode
           })
         }
@@ -374,26 +392,41 @@ io.on('connection', (socket) => {
     }
   })
 
-  socket.on('next-round', ({ roomId }) => {
+  socket.on('next-round', async ({ roomId }) => {
     const room = rooms.get(roomId)
     if (room) {
       if (!room.readyForNext) room.readyForNext = []
       if (!room.readyForNext.includes(socket.id)) {
         room.readyForNext.push(socket.id)
       }
-      
+
       io.to(roomId).emit('ready-count', room.readyForNext.length)
-      
+
       if (room.readyForNext.length === 2) {
         room.questionIndex++
-        
+
         // Vérifier si on a encore des questions
         if (room.questionIndex >= room.questionsList.length) {
           // Fin de partie !
+          let gameSummary = null
+          if ((room.mode === 'ai' || room.mode === 'quiz') && isAIAvailable() && room.players.length === 2) {
+            const [p1, p2] = room.players
+            try {
+              gameSummary = await generateGameSummary(
+                p1.pseudo, room.scores[p1.id] || 0,
+                p2.pseudo, room.scores[p2.id] || 0,
+                room.totalQuestions, room.bestStreak || 0, room.mode
+              )
+            } catch (error) {
+              console.error('❌ Erreur génération résumé de partie:', error.message)
+            }
+          }
+
           io.to(roomId).emit('game-over', {
             scores: room.scores,
             players: room.players,
-            mode: room.mode
+            mode: room.mode,
+            gameSummary
           })
           room.gameStarted = false
         } else {

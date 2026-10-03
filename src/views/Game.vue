@@ -7,6 +7,7 @@ const route = useRoute()
 const router = useRouter()
 const {
   players,
+  mySocketId,
   messages,
   currentQuestion,
   currentRound,
@@ -20,9 +21,13 @@ const {
   gameMode,
   isGenerating,
   generatingTheme,
+  generatingSeconds,
+  currentGeneratingMessage,
   isValidating,
   aiComment,
   aiExplanation,
+  matchStreak,
+  gameSummary,
   errorMessage,
   lastGameOptions,
   isCreator,
@@ -44,17 +49,17 @@ const chatContainer = ref(null)
 const chatOpen = ref(false)
 
 const myScore = computed(() => {
-  const me = players.value.find(p => p.pseudo === pseudo.value)
-  return me ? scores.value[me.id] || 0 : 0
+  return scores.value[mySocketId.value] || 0
 })
 
 const opponentScore = computed(() => {
-  const opponent = players.value.find(p => p.pseudo !== pseudo.value)
-  return opponent ? scores.value[opponent.id] || 0 : 0
+  const opp = opponent.value
+  return opp ? scores.value[opp.id] || 0 : 0
 })
 
+// Identifié par ID socket (robuste même en cas de pseudo identique)
 const opponent = computed(() => {
-  return players.value.find(p => p.pseudo !== pseudo.value)
+  return players.value.find(p => p.id !== mySocketId.value)
 })
 
 const isAIMode = computed(() => gameMode.value === 'ai')
@@ -138,7 +143,8 @@ watch(currentRound, () => {
           <div class="ai-dot"></div>
           <div class="ai-dot"></div>
         </div>
-        <p class="generating-hint">Quelques secondes pour concocter des questions originales ✨</p>
+        <p class="generating-hint">{{ currentGeneratingMessage }}</p>
+        <p class="generating-timer">⏱ {{ generatingSeconds }}s</p>
       </div>
     </div>
 
@@ -177,6 +183,11 @@ watch(currentRound, () => {
           <span v-if="myScore > opponentScore">🎉 Tu as gagné !</span>
           <span v-else-if="opponentScore > myScore">{{ opponent?.pseudo }} a gagné !</span>
           <span v-else>🤝 Égalité parfaite !</span>
+        </div>
+
+        <div v-if="gameSummary" class="ai-comment game-summary">
+          <span class="ai-comment-icon">🤖</span>
+          <p>{{ gameSummary }}</p>
         </div>
 
         <div class="game-over-actions">
@@ -279,7 +290,10 @@ watch(currentRound, () => {
               <div class="result-header" :class="{ match: roundResult.isMatch }">
                 <span class="result-icon">{{ roundResult.isMatch ? '🎉' : '😅' }}</span>
                 <h3>{{ roundResult.isMatch ? 'Point commun trouvé !' : 'Pas de match...' }}</h3>
+                <span v-if="isAIMode && matchStreak >= 2" class="streak-badge">🔥 {{ matchStreak }} d'affilée !</span>
               </div>
+
+              <p v-if="isAIMode && aiExplanation" class="ai-explanation">💡 {{ aiExplanation }}</p>
 
               <div class="answers-compare">
                 <div class="answer-card">
@@ -388,6 +402,7 @@ watch(currentRound, () => {
   justify-content: center;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 1rem;
 }
 
@@ -492,6 +507,15 @@ watch(currentRound, () => {
 .generating-hint {
   font-size: 0.9rem;
   color: var(--text-light);
+  min-height: 2.4em;
+}
+
+.generating-timer {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  opacity: 0.6;
+  margin-top: 0.5rem;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Error Toast */
@@ -632,6 +656,7 @@ watch(currentRound, () => {
   justify-content: center;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 1rem;
 }
 
@@ -799,6 +824,7 @@ watch(currentRound, () => {
   align-items: center;
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   padding: 0.75rem;
 }
 
@@ -1117,6 +1143,27 @@ watch(currentRound, () => {
 
 .result-header.match h3 {
   color: #059669;
+}
+
+.streak-badge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.2));
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  animation: floatIn 0.4s ease-out;
+}
+
+.ai-explanation {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  text-align: center;
+  margin: -0.5rem 0 1.25rem;
+  font-style: italic;
 }
 
 .answers-compare {
@@ -1447,6 +1494,7 @@ watch(currentRound, () => {
   width: 85%;
   max-width: 350px;
   height: 100vh;
+  height: 100dvh; /* tient compte de la barre d'adresse / clavier mobile, sinon le champ de saisie tombe hors écran */
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   flex-direction: column;

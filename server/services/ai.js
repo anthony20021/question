@@ -172,9 +172,9 @@ export async function checkAnswerMatch(answer1, answer2, question) {
 /**
  * Génère un commentaire de round (avec fallback de secours)
  */
-export async function generateRoundComment(question, player1Name, answer1, player2Name, answer2, isMatch) {
+export async function generateRoundComment(question, player1Name, answer1, player2Name, answer2, isMatch, streakInfo = {}) {
   try {
-    return await withFallback('generateRoundComment', question, player1Name, answer1, player2Name, answer2, isMatch)
+    return await withFallback('generateRoundComment', question, player1Name, answer1, player2Name, answer2, isMatch, streakInfo)
   } catch (error) {
     console.error('❌ Tous les providers ont échoué pour le commentaire, fallback par défaut')
     return isMatch
@@ -218,6 +218,20 @@ export async function generateQuizComment(question, correctAnswer, player1Name, 
   }
 }
 
+/**
+ * Génère un résumé/roast de fin de partie (avec fallback de secours)
+ */
+export async function generateGameSummary(player1Name, score1, player2Name, score2, totalQuestions, bestStreak, mode) {
+  try {
+    return await withFallback('generateGameSummary', player1Name, score1, player2Name, score2, totalQuestions, bestStreak, mode)
+  } catch (error) {
+    console.error('❌ Tous les providers ont échoué pour le résumé de partie, fallback par défaut')
+    return score1 === score2
+      ? `Égalité parfaite ${score1}/${totalQuestions} entre ${player1Name} et ${player2Name} ! 🤝`
+      : `${score1 > score2 ? player1Name : player2Name} l'emporte ${Math.max(score1, score2)}-${Math.min(score1, score2)} ! 🏆`
+  }
+}
+
 export default {
   initAI,
   isAIAvailable,
@@ -229,4 +243,5 @@ export default {
   generateQuizQuestions,
   checkQuizAnswer,
   generateQuizComment,
+  generateGameSummary,
 }

@@ -9,6 +9,14 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:7b-instruct'
 let isInitialized = false
 
 /**
+ * Retire un éventuel bloc <think>...</think> laissé par un modèle de raisonnement
+ */
+function stripThink(text) {
+  if (!text) return text
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+}
+
+/**
  * Initialise Ollama (vérifie que le serveur répond)
  */
 export async function initOllama() {
@@ -45,10 +53,12 @@ export async function generateText(prompt, options = {}) {
   const response = await fetch(`${OLLAMA_URL}/api/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(60000),
     body: JSON.stringify({
       model: OLLAMA_MODEL,
       prompt: prompt,
       stream: false,
+      think: false,
       options: {
         temperature: options.temperature ?? 0.7,
         num_predict: options.maxTokens ?? 256,
@@ -68,26 +78,34 @@ export async function generateText(prompt, options = {}) {
   console.log('--- RÉPONSE OLLAMA ---')
   console.log(data.response || '(vide)')
   console.log('--- FIN RÉPONSE ---')
-  
-  return data.response
+
+  return stripThink(data.response)
 }
 
 /**
  * Génère des questions pour le jeu GuessLink
  */
 export async function generateQuestions(theme = null, count = 10) {
-  let prompt = `Génère ${count} questions originales pour un jeu où 2 joueurs doivent trouver des points communs.
-Les questions doivent être du type "Quel est ton/ta ... préféré(e) ?" ou "Quelle est ta ... préférée ?"
-Exemples: "Quel est ton film préféré ?", "Quelle est ta pizza préférée ?"`
+  let prompt = `Génère ${count} questions ORIGINALES et VARIÉES pour un jeu où 2 joueurs doivent trouver des points communs (ils répondent chacun de leur côté, sans se concerter, et on regarde s'ils ont eu la même idée).
+
+Format des questions : "Quel est ton/ta ... préféré(e) ?", "Quelle est ta ... préférée ?", ou une formulation légèrement différente mais qui appelle une réponse courte, unique et précise (un mot, un nom, une expression).
+
+RÈGLES D'ORIGINALITÉ (important) :
+- Évite les questions ultra-banales et déjà vues mille fois (ex: "film préféré", "couleur préférée", "plat préféré" tout court) sauf si tu les rends plus précises/inattendues.
+- Cherche des angles surprenants, spécifiques ou légèrement décalés plutôt que génériques.
+- Varie les registres : un souvenir, un détail insolite, une manie, un goût précis, une référence pop culture pointue, un "guilty pleasure", etc.
+- Les 10 questions doivent être clairement différentes les unes des autres (pas deux fois la même idée reformulée).
+
+Exemples du niveau d'originalité attendu : "Quelle réplique de film tu ressors le plus souvent ?", "Quel est ton snack de fin de soirée honteux ?", "Quel groupe/artiste tu écoutes en cachette ?"`
 
   if (theme) {
-    prompt += `\n\nThème: ${theme}`
+    prompt += `\n\nThème imposé : ${theme}\n(Reste créatif et précis À L'INTÉRIEUR de ce thème, ne te contente pas des évidences.)`
   }
 
   prompt += `\n\nRéponds uniquement avec un tableau JSON de questions, sans explication.
 Format: ["Question 1 ?", "Question 2 ?", ...]`
 
-  const response = await generateText(prompt, { temperature: 0.8, maxTokens: 2048 })
+  const response = await generateText(prompt, { temperature: 0.95, maxTokens: 2048 })
   console.log('🦙 Ollama generateQuestions: recherche JSON dans la réponse...')
   console.log('📝 Réponse brute reçue:')
   console.log('='.repeat(50))
@@ -159,38 +177,51 @@ Réponds UNIQUEMENT en JSON: {"match": true/false, "explanation": "courte explic
 /**
  * Génère un commentaire fun sur le résultat d'une manche
  */
-export async function generateRoundComment(question, player1Name, answer1, player2Name, answer2, isMatch) {
+export async function generateRoundComment(question, player1Name, answer1, player2Name, answer2, isMatch, streakInfo = {}) {
+  const { streak = 0, brokenStreak = 0 } = streakInfo
   let prompt
-  
+
   if (isMatch) {
-    prompt = `MATCH ! ${player1Name} et ${player2Name} ont répondu la même chose (ou très similaire) : "${answer1}" et "${answer2}".
+    let streakNote = ''
+    if (streak >= 2) {
+      streakNote = `\n\nATTENTION : c'est déjà leur ${streak}ème match D'AFFILÉE ! Fais monter la sauce, sois de plus en plus impressionné, complotiste ou inquiet à ce sujet dans ton anecdote (sans le dire platement, intègre-le dans la blague).`
+    }
+    prompt = `Question posée : "${question}"
+MATCH ! ${player1Name} et ${player2Name} ont répondu la même chose (ou très similaire) : "${answer1}" et "${answer2}".
 
-IMPORTANT: C'est un MATCH, donc célèbre leur connexion, leur complicité, leur synchronisation.
+Tu es un pote culotté qui commente la partie, façon roast amical entre potes (un peu piquant, jamais méchant).
 
-Exemples de commentaires drôles pour un MATCH:
-- "${player1Name} et ${player2Name}, même cerveau ou vous trichez ?"
-- "Télépathie confirmée ! Flippant..."
-- "Vous avez répété avant ou quoi ?"
-- "Même longueur d'onde, même goûts, même cerveau !"
+Invente une PETITE ANECDOTE FICTIVE et absurde (un souvenir improbable, une théorie du complot, une private joke inventée) qui "expliquerait" pourquoi ils ont pensé à la même chose. Vise le sarcasme fun, pas la mièvrerie.${streakNote}
 
-Écris UNE phrase drôle et originale (différente des exemples) qui célèbre leur MATCH. Max 15 mots. Pas de guillemets.`
+Exemples de ton (à ne pas recopier) :
+- "${player1Name} et ${player2Name} ont clairement copié sur la même feuille en CE2, ça se voit encore."
+- "Y'a forcément eu un pacte secret signé au marqueur un soir de soirée, sinon j'ai pas d'explication."
+- "Télépathie ou vous partagez le même cerveau en LOA, faut qu'on en parle."
+
+Écris 1 à 2 phrases piquantes et originales (différentes des exemples), avec une anecdote inventée crédible-mais-absurde. Max 30 mots. Pas de guillemets.`
   } else {
-    prompt = `PAS DE MATCH ! ${player1Name} a répondu "${answer1}", ${player2Name} a répondu "${answer2}" - Réponses DIFFÉRENTES.
+    let streakNote = ''
+    if (brokenStreak >= 2) {
+      streakNote = `\n\nATTENTION : ils venaient d'enchaîner ${brokenStreak} matchs D'AFFILÉE et là, plus rien. Fais une blague sur cette chute brutale, la magie qui se casse la figure.`
+    }
+    prompt = `Question posée : "${question}"
+PAS DE MATCH ! ${player1Name} a répondu "${answer1}", ${player2Name} a répondu "${answer2}" - Réponses DIFFÉRENTES.
 
-IMPORTANT: Ce n'est PAS un match, donc chambre gentiment leur désaccord, leur incompatibilité, leur différence.
+Tu es un pote culotté qui commente la partie, façon roast amical entre potes (un peu piquant, jamais méchant).
 
-Exemples de commentaires drôles pour un NON-MATCH:
-- "${player1Name} dit "${answer1}", ${player2Name} dit "${answer2}"... Vous vous connaissez vraiment ?"
-- "L'incompatibilité totale ! C'est beau."
-- "Chacun dans son monde, j'adore."
-- "Deux goûts, deux couleurs, zéro point commun !"
+Invente une PETITE ANECDOTE FICTIVE et absurde qui "expliquerait" leur incompatibilité totale sur ce coup. Vise le sarcasme fun, pas la méchanceté gratuite.${streakNote}
 
-Écris UNE phrase drôle et originale (différente des exemples) qui chambre leur NON-MATCH. Max 15 mots. Pas de guillemets.`
+Exemples de ton (à ne pas recopier) :
+- "${player1Name} vit clairement sur une autre planète que ${player2Name}, coordonnées à vérifier."
+- "On dirait que l'un des deux a répondu avec les yeux fermés et un décalage horaire."
+- "Si l'amitié c'était les points communs, ces deux-là seraient en instance de divorce."
+
+Écris 1 à 2 phrases piquantes et originales (différentes des exemples), avec une anecdote inventée crédible-mais-absurde. Max 30 mots. Pas de guillemets.`
   }
 
   try {
     console.log(`🦙 Ollama: génération commentaire round...`)
-    const response = await generateText(prompt, { temperature: 1.0, maxTokens: 50 })
+    const response = await generateText(prompt, { temperature: 1.05, maxTokens: 90 })
     const comment = response.trim().replace(/^["'«]|["'»]$/g, '').replace(/\n/g, ' ')
     console.log(`🦙 Ollama commentaire: "${comment}"`)
     return comment
@@ -341,6 +372,47 @@ ${examples}
   return comment
 }
 
+/**
+ * Génère un résumé/roast piquant de fin de partie
+ */
+export async function generateGameSummary(player1Name, score1, player2Name, score2, totalQuestions, bestStreak, mode) {
+  let situation
+  if (score1 === score2) {
+    situation = `Match nul parfait : ${player1Name} et ${player2Name} finissent tous les deux à ${score1}/${totalQuestions}.`
+  } else {
+    const winner = score1 > score2 ? player1Name : player2Name
+    const loser = score1 > score2 ? player2Name : player1Name
+    const winnerScore = Math.max(score1, score2)
+    const loserScore = Math.min(score1, score2)
+    situation = `${winner} l'emporte ${winnerScore} à ${loserScore} face à ${loser}.`
+  }
+
+  const streakLine = bestStreak >= 3
+    ? `\nÀ noter : ils ont enchaîné une série de ${bestStreak} d'affilée à un moment, mentionne-le si ça t'inspire.`
+    : ''
+
+  const prompt = `Tu es un commentateur culotté qui clôture une partie entre potes (mode ${mode === 'quiz' ? 'quiz de culture générale' : 'points communs'}).
+
+${situation}${streakLine}
+
+Écris un PETIT ROAST DE FIN DE PARTIE : 2 phrases max, piquant et drôle, qui résume la partie et taquine gentiment le perdant (ou célèbre l'égalité de façon absurde si match nul). Pas mièvre, pas plat, un vrai commentaire de fin de match qui donne envie de rejouer. Pas de guillemets, pas de markdown.`
+
+  try {
+    console.log(`🦙 Ollama: génération résumé de partie...`)
+    const response = await generateText(prompt, { temperature: 1.05, maxTokens: 100 })
+    const summary = response.trim().replace(/^["'«]|["'»]$/g, '').replace(/\n+/g, ' ')
+    if (!summary || summary.length < 5) {
+      throw new Error('Résumé vide ou trop court')
+    }
+    return summary
+  } catch (error) {
+    console.error('❌ Ollama generateGameSummary error:', error.message)
+    return score1 === score2
+      ? `Égalité parfaite ${score1}/${totalQuestions} entre ${player1Name} et ${player2Name} ! 🤝`
+      : `${score1 > score2 ? player1Name : player2Name} l'emporte ${Math.max(score1, score2)}-${Math.min(score1, score2)} ! 🏆`
+  }
+}
+
 export default {
   initOllama,
   isOllamaAvailable,
@@ -351,4 +423,5 @@ export default {
   generateQuizQuestions,
   checkQuizAnswer,
   generateQuizComment,
+  generateGameSummary,
 }
