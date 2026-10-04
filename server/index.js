@@ -6,6 +6,7 @@ import cors from 'cors'
 import { existsSync, readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import { createHash, timingSafeEqual } from 'crypto'
 import { 
   initAI, 
   isAIAvailable,
@@ -27,6 +28,15 @@ const allQuestions = questionsData.questions
 
 // Initialiser les services AI (OpenRouter + Ollama fallback)
 await initAI()
+
+// Mot de passe requis pour les modes IA/Quiz (refus systématique s'il n'est pas défini)
+const AI_ACCESS_PASSWORD = process.env.AI_ACCESS_PASSWORD
+function isValidAIPassword(candidate) {
+  if (!AI_ACCESS_PASSWORD || typeof candidate !== 'string') return false
+  const a = createHash('sha256').update(candidate).digest()
+  const b = createHash('sha256').update(AI_ACCESS_PASSWORD).digest()
+  return timingSafeEqual(a, b)
+}
 
 const PORT = process.env.PORT || 3001
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
@@ -134,7 +144,13 @@ io.on('connection', (socket) => {
       const mode = options?.mode || 'classic'
       const theme = options?.theme || null
       const difficulty = options?.difficulty || 'medium'
-      
+
+      // Les modes IA/Quiz sollicitent le PC fixe : mot de passe obligatoire
+      if (mode !== 'classic' && !isValidAIPassword(options?.password)) {
+        socket.emit('error', { message: 'Mot de passe IA incorrect' })
+        return
+      }
+
       room.mode = mode
       room.theme = theme
       room.difficulty = difficulty

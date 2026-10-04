@@ -27,6 +27,7 @@ const copiedLink = ref(false)
 
 // Mode de jeu
 const selectedMode = ref('classic') // 'classic', 'ai' ou 'quiz'
+const aiPassword = ref('')
 const selectedTheme = ref('')
 const customTheme = ref('')
 const selectedDifficulty = ref('medium') // 'easy', 'medium', 'hard'
@@ -119,7 +120,8 @@ const handleStartGame = () => {
   const options = {
     mode: selectedMode.value,
     theme: (selectedMode.value === 'ai' || selectedMode.value === 'quiz') ? finalTheme.value : null,
-    difficulty: selectedMode.value === 'quiz' ? selectedDifficulty.value : null
+    difficulty: selectedMode.value === 'quiz' ? selectedDifficulty.value : null,
+    password: selectedMode.value === 'classic' ? null : aiPassword.value
   }
   startGame(roomId.value, options)
 }
@@ -127,6 +129,7 @@ const handleStartGame = () => {
 const canStart = computed(() => {
   if (selectedMode.value === 'classic') return true
   if (selectedMode.value === 'ai' || selectedMode.value === 'quiz') {
+    if (!aiPassword.value) return false
     if (selectedTheme.value === 'custom') {
       return customTheme.value.trim().length >= 3
     }
@@ -233,6 +236,16 @@ watch(selectedMode, () => {
             <span class="mode-name">Quiz</span>
             <span class="mode-desc">Culture générale</span>
           </button>
+        </div>
+
+        <div v-if="selectedMode !== 'classic'" class="theme-selection">
+          <p class="section-title">Mot de passe IA</p>
+          <input
+            v-model="aiPassword"
+            type="password"
+            autocomplete="off"
+            placeholder="Mot de passe requis pour les modes IA"
+          />
         </div>
 
         <!-- Sélection du thème si mode IA -->
